@@ -1,7 +1,8 @@
 /**
- * Seed script — creates an org, users, vehicles, and rides/trips
- * clustered around South Kolkata so "rides near me" has real matches
- * once a browser shares geolocation in that area.
+ * Seed script — creates an org, ~330 users (with vehicles for the drivers
+ * among them), and 500 trips/rides clustered around South Kolkata so
+ * "rides near me" has real matches once a browser shares geolocation in
+ * that area.
  *
  * Run: node seed/seedData.js
  * Requires MONGO_URI in backend/.env (same Atlas cluster your team shares)
@@ -15,8 +16,12 @@ const User = require("../models/User");
 const Vehicle = require("../models/Vehicle");
 const Ride = require("../models/Ride");
 const Trip = require("../models/Trip");
+const Booking = require("../models/Booking");
 
 const SEED_PASSWORD = "Password123!"; // plaintext used for all seeded logins — see printed table at the end
+
+const TOTAL_EMPLOYEES = 330; // + 1 admin
+const TOTAL_TRIPS = 500;
 
 // Real, walkable-distance-apart South Kolkata locations so seeded users
 // are "nearby each other" for geolocation-based matching.
@@ -30,6 +35,75 @@ const LOCATIONS = {
   saltLake:   { address: "Salt Lake, Kolkata, West Bengal, 700091, India", lat: 22.5726, lng: 88.4082 },
   rajarhat:   { address: "Rajarhat, Kolkata, West Bengal, 700135, India", lat: 22.6014, lng: 88.4692 },
 };
+const LOCATION_KEYS = Object.keys(LOCATIONS);
+
+// Same 5 model keys ReportsDashboard.jsx's VEHICLE_EFFICIENCY_KMPL lookup
+// recognizes (by substring match on the free-text "vehicle" label) — keeping
+// to this set means the seeded fleet actually varies the fuel-efficiency chart.
+const VEHICLE_MODELS = [
+  { make: "Maruti Suzuki", model: "Swift", seats: 4 },
+  { make: "Hyundai", model: "i20", seats: 4 },
+  { make: "Tata", model: "Nexon", seats: 5 },
+  { make: "Honda", model: "City", seats: 4 },
+  { make: "Toyota", model: "Innova", seats: 6 },
+];
+
+const FIRST_NAMES = [
+  "Rohan", "Priya", "Sourav", "Meera", "Arjun", "Ishita", "Ananya", "Kunal", "Neha", "Vikram",
+  "Sneha", "Aditya", "Pooja", "Rahul", "Divya", "Karan", "Simran", "Aman", "Riya", "Manish",
+  "Anjali", "Siddharth", "Tanvi", "Rajesh", "Kavita", "Nikhil", "Shreya", "Varun", "Pallavi", "Abhishek",
+  "Swati", "Gaurav", "Nidhi", "Ravi", "Sunita", "Deepak", "Anita", "Vikas", "Preeti", "Sanjay",
+  "Ritu", "Ajay", "Komal", "Vivek", "Payal", "Suresh", "Meenal", "Harsh", "Ankita", "Rakesh",
+];
+const LAST_NAMES = [
+  "Das", "Bose", "Ghosh", "Iyer", "Mukherjee", "Roy", "Sen", "Chatterjee", "Banerjee", "Chakraborty",
+  "Dutta", "Sarkar", "Mitra", "Nair", "Reddy", "Gupta", "Sharma", "Verma", "Kapoor", "Malhotra",
+  "Chopra", "Bhattacharya", "Pal", "Dey", "Saha", "Bhowmik", "Ganguly", "Sinha", "Kundu", "Basu",
+  "Mishra", "Rao", "Menon", "Pillai", "Iyengar", "Trivedi", "Joshi", "Agarwal", "Bhatia", "Khanna",
+];
+
+const TRAVEL_TIMES = ["06:45 AM", "07:15 AM", "07:30 AM", "08:00 AM", "08:30 AM", "09:15 AM", "06:00 PM", "06:45 PM", "07:15 PM", "08:00 PM"];
+
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+function randFloat(min, max) {
+  return Math.random() * (max - min) + min;
+}
+function pick(arr) {
+  return arr[randInt(0, arr.length - 1)];
+}
+function pickTwoDistinctKeys(arr) {
+  const a = pick(arr);
+  let b = pick(arr);
+  while (b === a) b = pick(arr);
+  return [a, b];
+}
+function shuffle(arr) {
+  const out = arr.slice();
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = randInt(0, i);
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+function generateUniqueName(usedNames) {
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const name = `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`;
+    if (!usedNames.has(name)) {
+      usedNames.add(name);
+      return name;
+    }
+  }
+  let suffix = 2;
+  let name;
+  do {
+    name = `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)} ${suffix++}`;
+  } while (usedNames.has(name));
+  usedNames.add(name);
+  return name;
+}
 
 function haversineKm(a, b) {
   const R = 6371;
@@ -42,7 +116,7 @@ function haversineKm(a, b) {
 }
 
 // Straight-line GeoJSON stub, broken into several intermediate points —
-// good enough for display, and the extra points give LiveTracking's demo
+// good enough for display, and the extra points give the live-tracking demo
 // animation something to step through instead of one big jump. Swap for a
 // real OSRM call later if you want the seeded routes to hug actual roads.
 function straightLineGeometry(start, dest, steps = 10) {
@@ -71,6 +145,20 @@ async function hashed(pw) {
   return bcrypt.hash(pw, salt);
 }
 
+// 500 trips split across every status the app needs to demo: a handful
+// "live" right now, most of them open/bookable, some already full, some
+// cancelled, and a large completed slice spread over the last 6 months so
+// the admin Reports page's month-by-month charts have real variety.
+function buildTripPlan() {
+  const plan = [];
+  for (let i = 0; i < 15; i++) plan.push({ status: "IN_PROGRESS", dayOffset: 0, progress: randFloat(0.15, 0.85) });
+  for (let i = 0; i < 220; i++) plan.push({ status: "PUBLISHED", dayOffset: randInt(0, 6) });
+  for (let i = 0; i < 30; i++) plan.push({ status: "PUBLISHED", dayOffset: randInt(0, 6), seatsOverride: 0 });
+  for (let i = 0; i < 35; i++) plan.push({ status: "CANCELLED", dayOffset: randInt(0, 6) });
+  for (let i = 0; i < 200; i++) plan.push({ status: "COMPLETED", dayOffset: -randInt(1, 180), progress: 1 });
+  return shuffle(plan);
+}
+
 async function main() {
   if (!process.env.MONGO_URI) {
     throw new Error("MONGO_URI not set — check backend/.env");
@@ -79,14 +167,22 @@ async function main() {
   await mongoose.connect(process.env.MONGO_URI);
   console.log("[seed] connected to MongoDB");
 
-  // Wipe only the collections this script owns — safe to re-run
+  // Only this script's own previous run should ever be wiped. Ride has no
+  // "SEED-" marker of its own, so scope its wipe (and the Bookings pointing
+  // at those rides) to the seed org specifically — an unscoped
+  // Ride.deleteMany({}) would also destroy real rides published by real
+  // users during manual testing, which is not this script's data to touch.
+  const existingOrg = await Organization.findOne({ name: "Wayflow Demo Org" });
+  const staleRideIds = existingOrg ? await Ride.find({ organization: existingOrg._id }).distinct("_id") : [];
+
   await Promise.all([
     Trip.deleteMany({ trip_id: { $regex: /^SEED-/ } }),
-    Ride.deleteMany({}),
+    staleRideIds.length ? Ride.deleteMany({ _id: { $in: staleRideIds } }) : Promise.resolve(),
+    staleRideIds.length ? Booking.deleteMany({ ride: { $in: staleRideIds } }) : Promise.resolve(),
     Vehicle.deleteMany({ registrationNumber: { $regex: /^WB-SEED-/ } }),
     User.deleteMany({ email: { $regex: /@wayflow-seed\.com$/ } }),
-    Organization.deleteMany({ name: "Wayflow Demo Org" }),
   ]);
+  if (existingOrg) await Organization.deleteOne({ _id: existingOrg._id });
   console.log("[seed] cleared previous seed data");
 
   // 1. Admin user first (Organization requires an existing admin ref)
@@ -108,11 +204,11 @@ async function main() {
   admin.organization = org._id;
   await admin.save();
 
-  // 2. Employee users — clustered around South Kolkata, each near
-  //    at least one other user so "nearby" search has real hits.
-  // isActive/loginDaysAgo give the admin dashboard's engagement charts real
-  // variety to show instead of an all-active, all-never-logged-in flat line.
-  const employeeSeeds = [
+  // 2. Employee users — clustered around South Kolkata. The first 6 are the
+  // original hand-picked cast (kept for anyone with those logins memorized);
+  // the rest are generated to reach TOTAL_EMPLOYEES. isActive/lastLoginAt
+  // vary so the admin dashboard's engagement charts have something to show.
+  const namedSeeds = [
     { name: "Rohan Das", location: LOCATIONS.jadavpur, isDriver: true, phone: 9830012345, isActive: true, loginDaysAgo: 1 },
     { name: "Priya Bose", location: LOCATIONS.ballygunge, isDriver: true, phone: 9830012346, isActive: true, loginDaysAgo: 3 },
     { name: "Sourav Ghosh", location: LOCATIONS.gariahat, isDriver: true, phone: 9830012347, isActive: true, loginDaysAgo: 20 },
@@ -121,13 +217,26 @@ async function main() {
     { name: "Ishita Roy", location: LOCATIONS.ballygunge, isDriver: false, phone: 9830012350, isActive: true, loginDaysAgo: 2 },
   ];
 
+  const usedNames = new Set(namedSeeds.map((s) => s.name));
+  const employeeSeeds = [...namedSeeds];
+  let phoneCounter = 9800000000;
+  while (employeeSeeds.length < TOTAL_EMPLOYEES) {
+    employeeSeeds.push({
+      name: generateUniqueName(usedNames),
+      location: LOCATIONS[pick(LOCATION_KEYS)],
+      isDriver: Math.random() < 0.4,
+      phone: phoneCounter++,
+      isActive: Math.random() < 0.9,
+      loginDaysAgo: Math.random() < 0.15 ? null : randInt(0, 60),
+    });
+  }
+
   const pw = await hashed(SEED_PASSWORD);
-  const users = [];
-  for (let i = 0; i < employeeSeeds.length; i++) {
-    const seed = employeeSeeds[i];
-    const lastLoginAt =
-      seed.loginDaysAgo == null ? undefined : new Date(now.getTime() - seed.loginDaysAgo * 24 * 60 * 60 * 1000);
-    const user = await User.create({
+  const userDocs = employeeSeeds.map((seed, i) => {
+    const joinedDaysAgo = i < namedSeeds.length ? randInt(0, 20) : randInt(0, 200);
+    const createdAt = new Date(now.getTime() - joinedDaysAgo * 24 * 60 * 60 * 1000);
+    const lastLoginAt = seed.loginDaysAgo == null ? undefined : new Date(now.getTime() - seed.loginDaysAgo * 24 * 60 * 60 * 1000);
+    return {
       name: seed.name,
       email: `${seed.name.toLowerCase().replace(/\s+/g, ".")}@wayflow-seed.com`,
       password: pw,
@@ -137,25 +246,20 @@ async function main() {
       phone: seed.phone,
       isActive: seed.isActive,
       lastLoginAt,
-    });
-    users.push({ user, ...seed });
-  }
+      createdAt,
+      updatedAt: createdAt,
+    };
+  });
+  const insertedUsers = await User.insertMany(userDocs, { timestamps: false });
+  const users = insertedUsers.map((user, i) => ({ user, ...employeeSeeds[i] }));
   console.log(`[seed] created ${users.length + 1} users (1 admin + ${users.length} employees)`);
 
-  // 3. Vehicles for driver users
-  const vehicleModels = [
-    { make: "Maruti Suzuki", model: "Swift", seats: 4 },
-    { make: "Hyundai", model: "i20", seats: 4 },
-    { make: "Tata", model: "Nexon", seats: 5 },
-    { make: "Honda", model: "City", seats: 4 },
-  ];
-
-  const vehicles = [];
+  // 3. Vehicles — one per driver.
   const drivers = users.filter((u) => u.isDriver);
-  for (let i = 0; i < drivers.length; i++) {
-    const v = vehicleModels[i % vehicleModels.length];
-    const vehicle = await Vehicle.create({
-      owner: drivers[i].user._id,
+  const vehicleDocs = drivers.map((d, i) => {
+    const v = VEHICLE_MODELS[i % VEHICLE_MODELS.length];
+    return {
+      owner: d.user._id,
       organization: org._id,
       make: v.make,
       model: v.model,
@@ -163,71 +267,32 @@ async function main() {
       seatingCapacity: v.seats,
       // Keep this in sync with the owner's access — a revoked employee's
       // vehicle is suspended too, so the fleet meter has a real red slice.
-      isActive: drivers[i].isActive !== false,
-    });
-    vehicles.push({ vehicle, driver: drivers[i] });
-  }
+      isActive: d.isActive !== false,
+    };
+  });
+  const insertedVehicles = await Vehicle.insertMany(vehicleDocs);
+  const vehicles = insertedVehicles.map((vehicle, i) => ({ vehicle, driver: drivers[i] }));
   console.log(`[seed] created ${vehicles.length} vehicles`);
 
-  // 4. Rides + Trips — same route data written to both collections.
-  //    An explicit list (not a generic loop) so each trip's purpose in
-  //    testing is obvious: which ones are "live" for Live Tracking, which
-  //    are payable in Find a Ride, and which cover the other My Trips states.
-
-  // Trip status -> Ride status (Ride's enum spells these differently).
+  // 4. Rides + Trips — same route data written to both collections, one
+  // random driver + route per plan entry.
   const RIDE_STATUS = {
     PUBLISHED: "Published",
-    STARTED: "InProgress",
     IN_PROGRESS: "InProgress",
     COMPLETED: "Completed",
     CANCELLED: "Cancelled",
   };
 
-  const tripPlan = [
-    // Two live trips, happening right now — join their rooms from
-    // LiveTracking.jsx and they already have a current_location partway
-    // along the route, so the map isn't empty even before any real/demo
-    // socket update arrives.
-    { start: "jadavpur", dest: "scienceCity", driverIndex: 0, status: "IN_PROGRESS", dayOffset: 0, progress: 0.4 },
-    { start: "ballygunge", dest: "saltLake", driverIndex: 1, status: "IN_PROGRESS", dayOffset: 0, progress: 0.65 },
-
-    // Bookable now — the bread-and-butter Find a Ride / Available Rides /
-    // Payment test cases.
-    { start: "gariahat", dest: "rajarhat", driverIndex: 2, status: "PUBLISHED", dayOffset: 0 },
-    { start: "garia", dest: "parkCircus", driverIndex: 3, status: "PUBLISHED", dayOffset: 0 },
-    { start: "jadavpur", dest: "ballygunge", driverIndex: 0, status: "PUBLISHED", dayOffset: 1 },
-    { start: "saltLake", dest: "scienceCity", driverIndex: 1, status: "PUBLISHED", dayOffset: 1 },
-
-    // Full — exercises the disabled "Full" button state on Available Rides.
-    { start: "scienceCity", dest: "saltLake", driverIndex: 2, status: "PUBLISHED", dayOffset: 2, seatsOverride: 0 },
-
-    // Already finished — shows up in My Trips history for its driver.
-    { start: "parkCircus", dest: "gariahat", driverIndex: 3, status: "COMPLETED", dayOffset: -1, progress: 1 },
-
-    // Cancelled — the other My Trips status worth being able to see.
-    { start: "rajarhat", dest: "garia", driverIndex: 0, status: "CANCELLED", dayOffset: 1 },
-
-    // Historical completed trips spread across the last several months —
-    // without these every trip lands in the current month, which leaves
-    // the Reports page's month-by-month fuel efficiency and financial
-    // summary with only one data point to show.
-    { start: "jadavpur", dest: "parkCircus", driverIndex: 1, status: "COMPLETED", dayOffset: -150, progress: 1 },
-    { start: "ballygunge", dest: "rajarhat", driverIndex: 2, status: "COMPLETED", dayOffset: -120, progress: 1 },
-    { start: "garia", dest: "scienceCity", driverIndex: 3, status: "COMPLETED", dayOffset: -92, progress: 1 },
-    { start: "gariahat", dest: "saltLake", driverIndex: 0, status: "COMPLETED", dayOffset: -85, progress: 1 },
-    { start: "jadavpur", dest: "rajarhat", driverIndex: 2, status: "COMPLETED", dayOffset: -60, progress: 1 },
-    { start: "ballygunge", dest: "parkCircus", driverIndex: 3, status: "COMPLETED", dayOffset: -30, progress: 1 },
-    { start: "scienceCity", dest: "garia", driverIndex: 1, status: "COMPLETED", dayOffset: -25, progress: 1 },
-  ];
-
+  const tripPlan = buildTripPlan();
   const tripDocs = [];
   const rideDocs = [];
 
   for (let i = 0; i < tripPlan.length; i++) {
     const plan = tripPlan[i];
-    const { vehicle, driver } = vehicles[plan.driverIndex];
-    const start = LOCATIONS[plan.start];
-    const dest = LOCATIONS[plan.dest];
+    const { vehicle, driver } = pick(vehicles);
+    const [startKey, destKey] = pickTwoDistinctKeys(LOCATION_KEYS);
+    const start = LOCATIONS[startKey];
+    const dest = LOCATIONS[destKey];
     const distanceKm = haversineKm(start, dest);
     const durationMins = Math.round((distanceKm / 30) * 60); // assume ~30km/h city avg
     const farePerSeat = Math.round(20 + distanceKm * 8.5); // matches config/maps.js FARE_CONFIG
@@ -236,14 +301,11 @@ async function main() {
     travelDate.setDate(now.getDate() + plan.dayOffset);
 
     const currentLocation =
-      plan.progress === undefined
-        ? { lat: start.lat, lng: start.lng }
-        : pointAlongRoute(start, dest, plan.progress);
+      plan.progress === undefined ? { lat: start.lat, lng: start.lng } : pointAlongRoute(start, dest, plan.progress);
 
-    const availableSeats = plan.seatsOverride ?? vehicle.seatingCapacity - 1;
+    const availableSeats = plan.seatsOverride ?? Math.max(vehicle.seatingCapacity - randInt(1, 2), 1);
 
-    // Trip (what FindRide/AvailableRides/Payment/LiveTracking actually read)
-    const trip = await Trip.create({
+    tripDocs.push({
       trip_id: `SEED-TRIP-${String(i + 1).padStart(3, "0")}`,
       driver: driver.user._id,
       driver_name: driver.user.name,
@@ -259,18 +321,13 @@ async function main() {
       available_seats: availableSeats,
       status: plan.status,
       current_location: currentLocation,
+      // Explicit createdAt (insertMany below skips the automatic timestamp)
+      // so completed trips actually land in the month they claim to.
+      createdAt: travelDate,
+      updatedAt: travelDate,
     });
-    // Override createdAt after creation so it matches travelDate exactly.
-    // Mongoose's timestamps middleware silently strips createdAt from
-    // Model.updateOne() $set payloads (and `{ timestamps: false }` isn't
-    // honored by this mongoose version — it just makes the write fail with
-    // acknowledged:false) — going through the native driver bypasses that.
-    await Trip.collection.updateOne({ _id: trip._id }, { $set: { createdAt: travelDate } });
-    trip.createdAt = travelDate;
-    tripDocs.push(trip);
 
-    // Ride (what the legacy rideController.js / bookRide flow reads) — same travelDate
-    const ride = await Ride.create({
+    rideDocs.push({
       driver: driver.user._id,
       organization: org._id,
       vehicle: vehicle._id,
@@ -281,22 +338,27 @@ async function main() {
       destinationLat: dest.lat,
       destinationLng: dest.lng,
       travelDate,
-      travelTime: "08:30 AM",
+      travelTime: pick(TRAVEL_TIMES),
       availableSeats,
       farePerSeat,
       status: availableSeats === 0 ? "FullyBooked" : RIDE_STATUS[plan.status],
+      createdAt: travelDate,
+      updatedAt: travelDate,
     });
-    rideDocs.push(ride);
   }
 
+  const insertedTrips = await Trip.insertMany(tripDocs, { timestamps: false });
+  const insertedRides = await Ride.insertMany(rideDocs, { timestamps: false });
+
   console.log(
-    `[seed] created ${tripDocs.length} trips (${tripDocs.filter((t) => t.status === "IN_PROGRESS").length} IN_PROGRESS, ${tripDocs.filter((t) => t.status === "PUBLISHED").length} PUBLISHED, ${tripDocs.filter((t) => t.status === "COMPLETED").length} COMPLETED, ${tripDocs.filter((t) => t.status === "CANCELLED").length} CANCELLED) and ${rideDocs.length} rides`
+    `[seed] created ${insertedTrips.length} trips (${tripDocs.filter((t) => t.status === "IN_PROGRESS").length} IN_PROGRESS, ${tripDocs.filter((t) => t.status === "PUBLISHED").length} PUBLISHED, ${tripDocs.filter((t) => t.status === "COMPLETED").length} COMPLETED, ${tripDocs.filter((t) => t.status === "CANCELLED").length} CANCELLED) and ${insertedRides.length} rides`
   );
 
   console.log("\n=== Seeded login credentials (all use the same password) ===");
   console.log(`Password: ${SEED_PASSWORD}\n`);
   console.log(`${admin.email}  (admin)`);
-  users.forEach((u) => console.log(`${u.user.email}  (${u.isDriver ? "driver" : "rider"})`));
+  namedSeeds.forEach((s, i) => console.log(`${users[i].user.email}  (${s.isDriver ? "driver" : "rider"})`));
+  console.log(`...+ ${users.length - namedSeeds.length} more @wayflow-seed.com accounts (${drivers.length} drivers, ${users.length - drivers.length} riders total)`);
   console.log("================================================================\n");
 
   await mongoose.disconnect();
