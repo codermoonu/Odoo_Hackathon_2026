@@ -83,7 +83,7 @@
 
   const addEmployee = async (req, res) => {
     try {
-      const { name, email, password, employeeId, gender, phone } = req.body;
+      const { name, email, password, employeeId, gender, phone, vehicle } = req.body;
       if (!name || !email || !password) {
         return res.status(400).json({ message: "Name, email and password are required" });
       }
@@ -108,6 +108,28 @@
         isActive: true,
       });
 
+      // Vehicle registration alongside the employee is optional — an admin
+      // may just be onboarding a rider who won't drive.
+      let createdVehicle = null;
+      let vehicleError = null;
+      if (vehicle && vehicle.model && vehicle.registrationNumber && vehicle.seatingCapacity) {
+        try {
+          createdVehicle = await Vehicle.create({
+            owner: employee._id,
+            organization: req.user.organization,
+            make: vehicle.make,
+            model: vehicle.model,
+            registrationNumber: vehicle.registrationNumber,
+            seatingCapacity: vehicle.seatingCapacity,
+          });
+        } catch (vErr) {
+          vehicleError =
+            vErr.code === 11000
+              ? "A vehicle with this registration number already exists"
+              : vErr.message;
+        }
+      }
+
       res.status(201).json({
         id: employee._id,
         name: employee.name,
@@ -117,6 +139,8 @@
         phone: employee.phone,
         isActive: employee.isActive,
         createdAt: employee.createdAt,
+        vehicle: createdVehicle,
+        vehicleError,
       });
     } catch (error) {
       res.status(500).json({ message: error.message });

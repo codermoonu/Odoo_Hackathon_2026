@@ -75,6 +75,7 @@ async function main() {
   if (!process.env.MONGO_URI) {
     throw new Error("MONGO_URI not set — check backend/.env");
   }
+  const now = new Date();
   await mongoose.connect(process.env.MONGO_URI);
   console.log("[seed] connected to MongoDB");
 
@@ -109,19 +110,23 @@ async function main() {
 
   // 2. Employee users — clustered around South Kolkata, each near
   //    at least one other user so "nearby" search has real hits.
+  // isActive/loginDaysAgo give the admin dashboard's engagement charts real
+  // variety to show instead of an all-active, all-never-logged-in flat line.
   const employeeSeeds = [
-    { name: "Rohan Das", location: LOCATIONS.jadavpur, isDriver: true, phone: 9830012345 },
-    { name: "Priya Bose", location: LOCATIONS.ballygunge, isDriver: true, phone: 9830012346 },
-    { name: "Sourav Ghosh", location: LOCATIONS.gariahat, isDriver: true, phone: 9830012347 },
-    { name: "Meera Iyer", location: LOCATIONS.jadavpur, isDriver: false, phone: 9830012348 },
-    { name: "Arjun Mukherjee", location: LOCATIONS.garia, isDriver: true, phone: 9830012349 },
-    { name: "Ishita Roy", location: LOCATIONS.ballygunge, isDriver: false, phone: 9830012350 },
+    { name: "Rohan Das", location: LOCATIONS.jadavpur, isDriver: true, phone: 9830012345, isActive: true, loginDaysAgo: 1 },
+    { name: "Priya Bose", location: LOCATIONS.ballygunge, isDriver: true, phone: 9830012346, isActive: true, loginDaysAgo: 3 },
+    { name: "Sourav Ghosh", location: LOCATIONS.gariahat, isDriver: true, phone: 9830012347, isActive: true, loginDaysAgo: 20 },
+    { name: "Meera Iyer", location: LOCATIONS.jadavpur, isDriver: false, phone: 9830012348, isActive: true, loginDaysAgo: null },
+    { name: "Arjun Mukherjee", location: LOCATIONS.garia, isDriver: true, phone: 9830012349, isActive: false, loginDaysAgo: 15 },
+    { name: "Ishita Roy", location: LOCATIONS.ballygunge, isDriver: false, phone: 9830012350, isActive: true, loginDaysAgo: 2 },
   ];
 
   const pw = await hashed(SEED_PASSWORD);
   const users = [];
   for (let i = 0; i < employeeSeeds.length; i++) {
     const seed = employeeSeeds[i];
+    const lastLoginAt =
+      seed.loginDaysAgo == null ? undefined : new Date(now.getTime() - seed.loginDaysAgo * 24 * 60 * 60 * 1000);
     const user = await User.create({
       name: seed.name,
       email: `${seed.name.toLowerCase().replace(/\s+/g, ".")}@wayflow-seed.com`,
@@ -130,7 +135,8 @@ async function main() {
       organization: org._id,
       employeeId: `EMP-${String(i + 2).padStart(4, "0")}`,
       phone: seed.phone,
-      isActive: true,
+      isActive: seed.isActive,
+      lastLoginAt,
     });
     users.push({ user, ...seed });
   }
@@ -155,7 +161,9 @@ async function main() {
       model: v.model,
       registrationNumber: `WB-SEED-${String(i + 1).padStart(3, "0")}`,
       seatingCapacity: v.seats,
-      isActive: true,
+      // Keep this in sync with the owner's access — a revoked employee's
+      // vehicle is suspended too, so the fleet meter has a real red slice.
+      isActive: drivers[i].isActive !== false,
     });
     vehicles.push({ vehicle, driver: drivers[i] });
   }
@@ -165,7 +173,6 @@ async function main() {
   //    An explicit list (not a generic loop) so each trip's purpose in
   //    testing is obvious: which ones are "live" for Live Tracking, which
   //    are payable in Find a Ride, and which cover the other My Trips states.
-  const now = new Date();
 
   // Trip status -> Ride status (Ride's enum spells these differently).
   const RIDE_STATUS = {

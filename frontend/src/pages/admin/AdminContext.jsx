@@ -57,6 +57,7 @@ export const AdminProvider = ({ children }) => {
   const addEmployee = async (data) => {
     const response = await api.post("/admin/employees", data);
     await fetchEmployees();
+    if (data.vehicle) await fetchVehicles();
     return response.data;
   };
 
