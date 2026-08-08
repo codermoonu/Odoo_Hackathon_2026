@@ -1,5 +1,6 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
+import { useAuth } from "../hooks/useAuth";
 
 import Splash from "../pages/Splash";
 import Landing from "../pages/Landing";
@@ -27,11 +28,17 @@ import ManageVehicles from "../pages/admin/ManageVehicles";
 import OrgSettings from "../pages/admin/OrgSettings";
 import ReportsDashboard from "../pages/reports/ReportsDashboard";
 
+function SplashRoute() {
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  return <Splash onComplete={() => navigate(isAuthenticated ? "/dashboard" : "/landing", { replace: true })} />;
+}
+
 function AppRoutes() {
   return (
     <Routes>
       {/* Public */}
-      <Route path="/" element={<Splash />} />
+      <Route path="/" element={<SplashRoute />} />
       <Route path="/landing" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
