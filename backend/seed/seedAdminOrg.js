@@ -1,12 +1,15 @@
 /**
- * Adds demo employees (and vehicles for some of them) into a specific
+ * Adds demo employees — each with their own vehicle — into a specific
  * admin's own organization — unlike seedData.js, which populates a wholly
  * separate "Wayflow Demo Org" that your real admin account never belongs
  * to, so its data never showed up on your actual admin dashboard.
  *
  * Run: node seed/seedAdminOrg.js [adminEmail] [count]
  *   adminEmail — defaults to singhabhinav2205@gmail.com
- *   count      — how many employees to add, defaults to 40 (30-50 range)
+ *   count      — how many employees/vehicles to add, defaults to 40 (30-50
+ *                range). Split deterministically so at least 30 are active
+ *                and at least 5 are inactive/revoked, for both employees
+ *                and their vehicles.
  *
  * Safe to re-run: only ever touches records it created itself (marked by
  * the @wayflow-org-seed.com email domain and AB-ORG- registration prefix,
@@ -46,6 +49,14 @@ function randInt(min, max) {
 }
 function pick(arr) {
   return arr[randInt(0, arr.length - 1)];
+}
+function shuffle(arr) {
+  const out = arr.slice();
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = randInt(0, i);
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
 }
 
 function generateUniqueName(usedNames) {
@@ -98,16 +109,30 @@ async function main() {
     Vehicle.deleteMany({ organization: orgId, registrationNumber: { $regex: new RegExp(`^${REG_PREFIX}`) } }),
   ]);
 
+  // Deterministic active/inactive split (not a probability threshold) so the
+  // dashboard always shows at least MIN_ACTIVE active and MIN_INACTIVE
+  // revoked accounts, never "probably enough". Every employee also owns a
+  // vehicle, so the Vehicle Fleet split mirrors these same two numbers.
+  const MIN_ACTIVE = 30;
+  const MIN_INACTIVE = 5;
+  const inactiveTarget = Math.max(MIN_INACTIVE, Math.round(count * 0.2));
+  const activeTarget = count - inactiveTarget;
+  if (activeTarget < MIN_ACTIVE) {
+    throw new Error(`count=${count} is too low to guarantee >=${MIN_ACTIVE} active with >=${MIN_INACTIVE} inactive — raise count.`);
+  }
+  const activeFlags = shuffle([...Array(activeTarget).fill(true), ...Array(inactiveTarget).fill(false)]);
+
   const usedNames = new Set();
   const employeeSeeds = [];
   let phoneCounter = 9810000000;
   while (employeeSeeds.length < count) {
+    const isActive = activeFlags[employeeSeeds.length];
     employeeSeeds.push({
       name: generateUniqueName(usedNames),
-      isDriver: Math.random() < 0.45,
+      isDriver: true,
       phone: phoneCounter++,
-      isActive: Math.random() < 0.88,
-      loginDaysAgo: Math.random() < 0.2 ? null : randInt(0, 45),
+      isActive,
+      loginDaysAgo: !isActive ? randInt(20, 90) : Math.random() < 0.2 ? null : randInt(0, 45),
     });
   }
 
