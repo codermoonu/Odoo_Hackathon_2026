@@ -1,0 +1,148 @@
+.splash {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #05060a;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.splash__chrome {
+  position: relative;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  height: 100%;
+  padding: clamp(28px, 7vh, 72px) 24px 0;
+  text-align: center;
+  color: #f4f6fb;
+  opacity: 0;
+  transform: translateY(14px);
+  animation: splash-chrome-in 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
+  transition: opacity 0.45s ease, transform 0.45s ease, filter 0.45s ease;
+}
+
+.splash__chrome--out {
+  opacity: 0;
+  transform: translateY(-10px);
+  filter: blur(4px);
+  animation: none;
+}
+
+@keyframes splash-chrome-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.splash__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.splash__logo-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(160deg, #22c55e, #14532d);
+  color: #051006;
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.35), 0 8px 24px rgba(34, 197, 94, 0.35);
+}
+
+.splash__logo-text {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #f4f6fb;
+}
+
+.splash__tagline {
+  margin: 14px 0 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: #7fe0c3;
+  text-transform: uppercase;
+}
+
+.splash__headline {
+  margin: clamp(18px, 4vh, 34px) 0 0;
+  font-size: clamp(1.7rem, 4.4vw, 3rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: #f8fafc;
+  max-width: 18ch;
+}
+
+.splash__headline-accent {
+  background: linear-gradient(90deg, #4ade80, #22d3ee);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.splash__progress {
+  position: relative;
+  margin-top: clamp(28px, 8vh, 56px);
+  width: min(220px, 60vw);
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.splash__progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #22c55e, #22d3ee);
+  animation-name: splash-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.7);
+}
+
+@keyframes splash-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.splash__hint {
+  margin: 12px 0 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  color: rgba(226, 232, 240, 0.55);
+}
+
+@media (max-width: 560px) {
+  .splash__chrome {
+    padding-top: clamp(20px, 6vh, 40px);
+  }
+  .splash__headline {
+    font-size: clamp(1.4rem, 6vw, 2rem);
+    max-width: 16ch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash__chrome {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .splash__progress-fill {
+    animation: none;
+  }
+}

@@ -1,23 +1,21 @@
-const mongoose = require("mongoose");
 const Vehicle = require("../models/Vehicle");
 
 const addVehicle = async (req, res) => {
   try {
-    const { organization, make, model, registrationNumber, seatingCapacity } = req.body;
+    const { make, model, registrationNumber, seatingCapacity } = req.body;
 
-    if (!organization || !model || !registrationNumber || !seatingCapacity) {
+    if (!model || !registrationNumber || !seatingCapacity) {
       return res.status(400).json({
-        message: "organization, model, registrationNumber and seatingCapacity are required",
+        message: "model, registrationNumber and seatingCapacity are required",
       });
     }
-
-    if (!mongoose.Types.ObjectId.isValid(organization)) {
-      return res.status(400).json({ message: "Invalid organization id" });
+    if (!req.user.organization) {
+      return res.status(400).json({ message: "You must belong to an organization to register a vehicle" });
     }
 
     const vehicle = await Vehicle.create({
       owner: req.user._id,
-      organization,
+      organization: req.user.organization,
       make,
       model,
       registrationNumber,
