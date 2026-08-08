@@ -17,9 +17,17 @@ const STATUS_TONE = {
   CANCELLED: "danger",
 };
 
+// Geocoded addresses vary in how much admin hierarchy they include
+// ("Jadavpur, Kolkata, West Bengal, India" vs "Jadavpur, Kolkata,
+// Kolkata Metropolitan Area, Kolkata, West Bengal, India" for the same
+// place), so a plain substring check in either direction is too brittle.
+// Match on the query's first (most specific) segment instead — that's
+// the actual place name the rider searched for.
 function matches(text, query) {
   if (!query) return true;
-  return (text || "").toLowerCase().includes(query.toLowerCase());
+  const primaryTerm = query.split(",")[0].trim().toLowerCase();
+  if (!primaryTerm) return true;
+  return (text || "").toLowerCase().includes(primaryTerm);
 }
 
 function AvailableRides() {
