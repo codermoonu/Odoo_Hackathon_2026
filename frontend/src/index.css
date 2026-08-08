@@ -5,28 +5,28 @@ WAYFLOW design tokens — violet SaaS palette
 ========================================================================== */
 
 @theme {
-  --color-bg: #0c0a14;
-  --color-bg-alt: #100d1c;
-  --color-surface: #161225;
-  --color-surface-alt: #1e1830;
-  --color-surface-raised: #261f3d;
-  --color-border: rgba(167, 139, 250, 0.14);
-  --color-border-strong: rgba(167, 139, 250, 0.28);
-  --color-divider: rgba(245, 243, 255, 0.08);
+  --color-bg: #ffffff;
+  --color-bg-alt: #faf9ff;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f7f4ff;
+  --color-surface-raised: #efe9fb;
+  --color-border: #e7e1f1;
+  --color-border-strong: #ddd7ea;
+  --color-divider: rgba(36, 28, 53, 0.08);
 
-  --color-text: #f5f3ff;
-  --color-text-dim: rgba(245, 243, 255, 0.68);
-  --color-text-faint: rgba(245, 243, 255, 0.42);
+  --color-text: #241c35;
+  --color-text-dim: #6b6378;
+  --color-text-faint: #948da3;
 
-  --color-success: #34d399;
-  --color-warning: #fbbf24;
-  --color-danger: #f87171;
+  --color-success: #059669;
+  --color-warning: #b45309;
+  --color-danger: #dc2626;
 
   --font-display: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 
-  --shadow-card: 0 18px 40px rgba(6, 4, 16, 0.55);
-  --shadow-glow: 0 0 32px rgba(124, 58, 237, 0.35);
+  --shadow-card: 0 18px 40px rgba(36, 28, 53, 0.1);
+  --shadow-glow: 0 0 32px rgba(124, 58, 237, 0.18);
 }
 
 :root {
@@ -65,7 +65,7 @@ body,
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
@@ -80,7 +80,7 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid #a78bfa;
+  outline: 2px solid #7c3aed;
   outline-offset: 2px;
   border-radius: 8px;
 }
@@ -564,22 +564,33 @@ NAVBAR
 ========================================================================== */
 
 .landing-nav {
-  position: relative;
+  position: sticky;
+  top: 0;
 
   z-index: 30;
 
-  width: min(
-    calc(100% - 48px),
-    1280px
-  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 14px 24px;
+
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  border-bottom: 1px solid rgba(231, 225, 241, 0.7);
+}
+
+.landing-nav-inner {
+  width: 100%;
+  max-width: 1280px;
 
   margin: 0 auto;
 
   display: flex;
   align-items: center;
   justify-content: space-between;
-
-  padding: 24px 0;
 }
 
 .brand-link {
@@ -1694,9 +1705,7 @@ RESPONSIVE
 
 @media (max-width: 650px) {
   .landing-nav {
-    width: calc(100% - 32px);
-
-    padding: 18px 0;
+    padding: 14px 16px;
   }
 
   .brand-logo-box {

@@ -20,7 +20,7 @@ function Modal({ open, onClose, title, children }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className="animate-fade-up relative w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-[0_30px_70px_rgba(6,4,16,0.6)]"
+        className="animate-fade-up relative w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-[0_30px_70px_rgba(36,28,53,0.25)]"
       >
         <div className="mb-5 flex items-center justify-between">
           <h2 id="modal-title" className="font-display text-lg font-bold">
@@ -28,7 +28,7 @@ function Modal({ open, onClose, title, children }) {
           </h2>
           <button
             onClick={onClose}
-            className="cursor-pointer rounded-lg p-1.5 text-text-faint hover:bg-white/5 hover:text-text"
+            className="cursor-pointer rounded-lg p-1.5 text-text-faint hover:bg-black/5 hover:text-text"
             aria-label="Close"
           >
             <X size={18} />

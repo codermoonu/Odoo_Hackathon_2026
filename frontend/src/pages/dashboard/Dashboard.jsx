@@ -13,9 +13,9 @@ import { formatCurrency, formatDateTime } from "../../utils/formatDate";
 
 const QUICK_ACTIONS = [
   { to: "/rides/find", label: "Find a Ride", icon: MapPin, tone: "from-violet-600 to-purple-500" },
-  { to: "/rides/offer", label: "Offer a Ride", icon: Navigation, tone: "from-indigo-600 to-violet-500" },
+  { to: "/rides/offer", label: "Offer a Ride", icon: Navigation, tone: "from-violet-500 to-purple-500" },
   { to: "/vehicle", label: "My Vehicle", icon: Car, tone: "from-purple-600 to-fuchsia-500" },
-  { to: "/wallet", label: "Wallet", icon: Wallet, tone: "from-violet-600 to-indigo-500" },
+  { to: "/wallet", label: "Wallet", icon: Wallet, tone: "from-violet-600 to-purple-500" },
 ];
 
 const STATUS_TONE = {
@@ -70,7 +70,7 @@ function Dashboard() {
       <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card className="p-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/15 text-violet-700">
               <Car size={19} />
             </div>
             <p className="text-sm font-medium text-text-dim">My Vehicles</p>
@@ -79,7 +79,7 @@ function Dashboard() {
         </Card>
         <Card className="p-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-300">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700">
               <Wallet size={19} />
             </div>
             <p className="text-sm font-medium text-text-dim">Wallet Balance</p>
@@ -88,7 +88,7 @@ function Dashboard() {
         </Card>
         <Card className="p-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-300">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/15 text-violet-700">
               <RouteIcon size={19} />
             </div>
             <p className="text-sm font-medium text-text-dim">Published Trips</p>
@@ -110,7 +110,7 @@ function Dashboard() {
                 <Icon size={18} />
               </div>
               <span className="text-sm font-semibold">{label}</span>
-              <ArrowRight size={14} className="text-text-faint transition-transform group-hover:translate-x-1 group-hover:text-violet-300" />
+              <ArrowRight size={14} className="text-text-faint transition-transform group-hover:translate-x-1 group-hover:text-violet-700" />
             </Link>
           ))}
         </div>
@@ -119,7 +119,7 @@ function Dashboard() {
       <div className="mt-9">
         <div className="flex items-center justify-between">
           <h3 className="font-display text-base font-bold">Recent trips</h3>
-          <Link to="/trips" className="text-sm font-semibold text-violet-400 hover:text-violet-300">
+          <Link to="/trips" className="text-sm font-semibold text-violet-600 hover:text-violet-700">
             View all
           </Link>
         </div>
@@ -131,7 +131,7 @@ function Dashboard() {
             <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
               <Users size={28} className="text-text-faint" />
               <p className="text-sm text-text-dim">No trips published yet.</p>
-              <Link to="/rides/offer" className="text-sm font-semibold text-violet-400 hover:text-violet-300">
+              <Link to="/rides/offer" className="text-sm font-semibold text-violet-600 hover:text-violet-700">
                 Offer your first ride
               </Link>
             </div>

@@ -39,7 +39,7 @@ function AppShell({ children, title, actions }) {
     <div className="flex min-h-dvh bg-bg text-text">
       {open && (
         <div
-          className="fixed inset-0 z-30 bg-black/60 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/40 lg:hidden"
           onClick={() => setOpen(false)}
           aria-hidden="true"
         />
@@ -56,7 +56,7 @@ function AppShell({ children, title, actions }) {
             <span className="font-display text-lg font-bold tracking-tight">WAYFLOW</span>
           </div>
           <button
-            className="rounded-lg p-1.5 text-text-dim hover:bg-white/5 lg:hidden"
+            className="rounded-lg p-1.5 text-text-dim hover:bg-black/5 lg:hidden"
             onClick={() => setOpen(false)}
             aria-label="Close navigation"
           >
@@ -72,8 +72,8 @@ function AppShell({ children, title, actions }) {
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors duration-150 ${
                   isActive
-                    ? "bg-violet-600/15 text-violet-300"
-                    : "text-text-dim hover:bg-white/5 hover:text-text"
+                    ? "bg-violet-600/12 text-violet-700"
+                    : "text-text-dim hover:bg-black/5 hover:text-text"
                 }`
               }
             >
@@ -85,7 +85,7 @@ function AppShell({ children, title, actions }) {
         <div className="border-t border-border p-3">
           <button
             onClick={handleLogout}
-            className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-text-dim transition-colors duration-150 hover:bg-red-500/10 hover:text-red-300"
+            className="flex w-full cursor-pointer items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-text-dim transition-colors duration-150 hover:bg-red-500/10 hover:text-red-700"
           >
             <LogOut size={18} />
             Log out
@@ -97,7 +97,7 @@ function AppShell({ children, title, actions }) {
         <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-border bg-bg/80 px-4 py-4 backdrop-blur sm:px-6">
           <div className="flex items-center gap-3">
             <button
-              className="cursor-pointer rounded-lg p-2 text-text-dim hover:bg-white/5 lg:hidden"
+              className="cursor-pointer rounded-lg p-2 text-text-dim hover:bg-black/5 lg:hidden"
               onClick={() => setOpen(true)}
               aria-label="Open navigation"
             >

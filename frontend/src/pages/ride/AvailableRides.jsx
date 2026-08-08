@@ -80,7 +80,7 @@ function AvailableRides() {
                 to <span className="font-semibold text-text">{destination}</span>
               </>
             )}
-            <Link to="/rides/find" className="ml-1 font-semibold text-violet-400 hover:text-violet-300">
+            <Link to="/rides/find" className="ml-1 font-semibold text-violet-600 hover:text-violet-700">
               Change search
             </Link>
           </p>
@@ -91,7 +91,7 @@ function AvailableRides() {
             type="button"
             onClick={() => setView("list")}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-              view === "list" ? "bg-violet-500/20 text-violet-300" : "text-text-faint hover:text-text-dim"
+              view === "list" ? "bg-violet-500/20 text-violet-700" : "text-text-faint hover:text-text-dim"
             }`}
           >
             <List size={13} /> List
@@ -100,7 +100,7 @@ function AvailableRides() {
             type="button"
             onClick={() => setView("map")}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-              view === "map" ? "bg-violet-500/20 text-violet-300" : "text-text-faint hover:text-text-dim"
+              view === "map" ? "bg-violet-500/20 text-violet-700" : "text-text-faint hover:text-text-dim"
             }`}
           >
             <MapIcon size={13} /> Map
@@ -123,7 +123,7 @@ function AvailableRides() {
         <Card className="flex flex-col items-center gap-3 px-6 py-16 text-center">
           <SearchX size={28} className="text-text-faint" />
           <p className="text-sm text-text-dim">No rides match your search yet.</p>
-          <Link to="/rides/offer" className="text-sm font-semibold text-violet-400 hover:text-violet-300">
+          <Link to="/rides/offer" className="text-sm font-semibold text-violet-600 hover:text-violet-700">
             Be the first to offer one
           </Link>
         </Card>
@@ -147,7 +147,7 @@ function AvailableRides() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="flex items-center gap-1.5 truncate text-sm font-semibold">
-                      <MapPin size={14} className="shrink-0 text-violet-400" />
+                      <MapPin size={14} className="shrink-0 text-violet-600" />
                       {trip.start_address || "Pickup"}
                     </p>
                     <p className="mt-1.5 flex items-center gap-1.5 truncate text-sm font-semibold">
@@ -169,23 +169,23 @@ function AvailableRides() {
                 <div className="flex items-center justify-between border-t border-border pt-4">
                   <div className="flex items-center gap-4 text-sm text-text-dim">
                     <span className="flex items-center gap-1.5">
-                      <Users size={15} className="text-violet-400" />
+                      <Users size={15} className="text-violet-600" />
                       {seats} seats left
                     </span>
                     {trip.distance_km != null && (
                       <span className="flex items-center gap-1.5">
-                        <Fuel size={15} className="text-violet-400" />
+                        <Fuel size={15} className="text-violet-600" />
                         {trip.distance_km} km
                       </span>
                     )}
                   </div>
-                  <p className="font-display text-lg font-bold text-violet-300">
+                  <p className="font-display text-lg font-bold text-violet-700">
                     {formatCurrency(trip.fare_per_seat)}
                   </p>
                 </div>
 
                 {isRequested ? (
-                  <div className="flex items-center justify-center gap-2 rounded-xl bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-300">
+                  <div className="flex items-center justify-center gap-2 rounded-xl bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-700">
                     <CheckCircle2 size={16} />
                     Seat requested
                   </div>

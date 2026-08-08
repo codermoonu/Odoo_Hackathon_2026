@@ -32,7 +32,7 @@ function Settings() {
           <div>
             <h2 className="font-display text-lg font-bold">{user?.name}</h2>
             <p className="mt-1 flex items-center gap-1.5 text-sm text-text-dim">
-              <Mail size={14} className="text-violet-400" />
+              <Mail size={14} className="text-violet-600" />
               {user?.email}
             </p>
             {user?.id && (
@@ -49,7 +49,7 @@ function Settings() {
             <Link key={to} to={to}>
               <Card className="flex items-center justify-between px-5 py-4 transition-colors hover:border-violet-400/30">
                 <span className="flex items-center gap-3 text-sm font-semibold">
-                  <Icon size={18} className="text-violet-400" />
+                  <Icon size={18} className="text-violet-600" />
                   {label}
                 </span>
                 <ChevronRight size={16} className="text-text-faint" />

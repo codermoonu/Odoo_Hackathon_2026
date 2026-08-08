@@ -5,9 +5,9 @@ const VARIANTS = {
     "bg-gradient-to-r from-violet-600 to-purple-500 text-white shadow-[0_8px_24px_rgba(124,58,237,0.35)] hover:shadow-[0_10px_30px_rgba(124,58,237,0.5)] hover:brightness-110",
   secondary:
     "bg-surface-alt text-text border border-border hover:border-violet-400/50 hover:bg-surface-raised",
-  ghost: "bg-transparent text-text-dim hover:text-text hover:bg-white/5",
+  ghost: "bg-transparent text-text-dim hover:text-text hover:bg-black/5",
   danger:
-    "bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20",
+    "bg-red-500/10 text-red-700 border border-red-500/30 hover:bg-red-500/20",
 };
 
 function Button({

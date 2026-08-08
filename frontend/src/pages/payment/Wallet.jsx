@@ -115,7 +115,7 @@ function Wallet() {
 
           <form onSubmit={handleTopUp} noValidate className="flex flex-col gap-4 p-6">
             {error && (
-              <div role="alert" className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              <div role="alert" className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-700">
                 {error}
               </div>
             )}
@@ -148,7 +148,7 @@ function Wallet() {
 
         <Card className="lg:col-span-2">
           <div className="flex items-center gap-2 border-b border-border px-6 py-4">
-            <ReceiptText size={17} className="text-violet-400" />
+            <ReceiptText size={17} className="text-violet-600" />
             <h2 className="font-display text-base font-bold">Transaction history</h2>
           </div>
 
@@ -163,7 +163,7 @@ function Wallet() {
                 return (
                   <li key={p._id} className="flex items-center justify-between gap-3 px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-text-dim">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-black/5 text-text-dim">
                         <Icon size={16} />
                       </div>
                       <div>

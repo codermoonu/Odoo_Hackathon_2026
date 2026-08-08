@@ -85,6 +85,7 @@ function Landing() {
         ========================= */}
 
         <nav className="landing-nav">
+        <div className="landing-nav-inner">
 
           <Link to="/" className="brand-link">
 
@@ -165,6 +166,7 @@ function Landing() {
 
           </button>
 
+        </div>
         </nav>
 
 
