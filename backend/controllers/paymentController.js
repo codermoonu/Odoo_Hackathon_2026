@@ -2,9 +2,17 @@ const crypto = require("crypto");
 const mongoose = require("mongoose");
 const razorpay = require("../config/razorpay");
 const Payment = require("../models/Payment");
+const Booking = require("../models/Booking");
 
 // Razorpay SDK rejects with a plain { statusCode, error: { description } } object, not an Error.
 const getErrorMessage = (error) => error?.error?.description || error?.message || "Something went wrong";
+
+// The missing link that used to leave a Booking stuck at paymentStatus:
+// "Pending" forever even after Razorpay/wallet confirmed the charge.
+const markBookingPaid = async (bookingId) => {
+  if (!bookingId) return;
+  await Booking.findByIdAndUpdate(bookingId, { paymentStatus: "Completed" });
+};
 
 // Wallet balance = paid top-ups minus everything ever paid *from* the
 // wallet (method: "wallet"), regardless of purpose. Top-ups always come in
@@ -22,13 +30,16 @@ const getWalletBalance = async (userId) => {
 
 const createOrder = async (req, res) => {
   try {
-    const { amount, currency, purpose, tripId, notes } = req.body;
+    const { amount, currency, purpose, tripId, bookingId, notes } = req.body;
 
     if (!amount || Number(amount) <= 0) {
       return res.status(400).json({ message: "A positive amount is required" });
     }
     if (tripId && !mongoose.Types.ObjectId.isValid(tripId)) {
       return res.status(400).json({ message: "Invalid tripId" });
+    }
+    if (bookingId && !mongoose.Types.ObjectId.isValid(bookingId)) {
+      return res.status(400).json({ message: "Invalid bookingId" });
     }
 
     // Razorpay caps `receipt` at 40 characters.
@@ -44,6 +55,7 @@ const createOrder = async (req, res) => {
     const payment = await Payment.create({
       user: req.user._id,
       trip: tripId || undefined,
+      booking: bookingId || undefined,
       razorpayOrderId: order.id,
       amount: Number(amount),
       currency: order.currency,
@@ -95,6 +107,7 @@ const verifyPayment = async (req, res) => {
     payment.razorpayPaymentId = razorpay_payment_id;
     payment.razorpaySignature = razorpay_signature;
     await payment.save();
+    await markBookingPaid(payment.booking);
 
     res.status(200).json({ message: "Payment verified successfully", payment });
   } catch (error) {
@@ -104,13 +117,16 @@ const verifyPayment = async (req, res) => {
 
 const payWithWallet = async (req, res) => {
   try {
-    const { amount, purpose, tripId, notes } = req.body;
+    const { amount, purpose, tripId, bookingId, notes } = req.body;
 
     if (!amount || Number(amount) <= 0) {
       return res.status(400).json({ message: "A positive amount is required" });
     }
     if (tripId && !mongoose.Types.ObjectId.isValid(tripId)) {
       return res.status(400).json({ message: "Invalid tripId" });
+    }
+    if (bookingId && !mongoose.Types.ObjectId.isValid(bookingId)) {
+      return res.status(400).json({ message: "Invalid bookingId" });
     }
 
     const balance = await getWalletBalance(req.user._id);
@@ -121,6 +137,7 @@ const payWithWallet = async (req, res) => {
     const payment = await Payment.create({
       user: req.user._id,
       trip: tripId || undefined,
+      booking: bookingId || undefined,
       method: "wallet",
       amount: Number(amount),
       currency: "INR",
@@ -128,6 +145,7 @@ const payWithWallet = async (req, res) => {
       notes: notes || {},
       status: "paid",
     });
+    await markBookingPaid(bookingId);
 
     res.status(201).json({ payment, balance: balance - Number(amount) });
   } catch (error) {
@@ -196,6 +214,7 @@ const razorpayWebhook = async (req, res) => {
           payment.status = "paid";
           payment.razorpayPaymentId = entity.id;
           await payment.save();
+          await markBookingPaid(payment.booking);
         } else if (event === "payment.failed") {
           payment.status = "failed";
           payment.razorpayPaymentId = entity.id;

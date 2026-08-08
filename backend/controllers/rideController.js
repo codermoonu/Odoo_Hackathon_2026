@@ -1,6 +1,18 @@
 const Ride = require("../models/Ride");
 const Vehicle = require("../models/Vehicle");
 
+// Geocoded addresses vary in how much admin hierarchy they include for the
+// same place ("Jadavpur, Kolkata, West Bengal, India" vs "Jadavpur, Kolkata,
+// Kolkata Metropolitan Area, Kolkata, West Bengal, India"), so matching the
+// full query string as a substring against the stored address misses valid
+// hits. Match on the query's first (most specific) segment instead.
+function addressSearchRegex(query) {
+  const primaryTerm = query.split(",")[0].trim();
+  if (!primaryTerm) return null;
+  const escaped = primaryTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return { $regex: escaped, $options: "i" };
+}
+
 const publishRide = async (req, res) => {
   try {
     const {
@@ -49,8 +61,14 @@ const searchRides = async (req, res) => {
     const { pickupLocation, destination, travelDate, seatsRequired } = req.query;
 
     let query = { status: "Published", driver: { $ne: req.user._id } };
-    if (pickupLocation) query.pickupLocation = { $regex: pickupLocation, $options: "i" };
-    if (destination) query.destination = { $regex: destination, $options: "i" };
+    if (pickupLocation) {
+      const regex = addressSearchRegex(pickupLocation);
+      if (regex) query.pickupLocation = regex;
+    }
+    if (destination) {
+      const regex = addressSearchRegex(destination);
+      if (regex) query.destination = regex;
+    }
     if (travelDate) query.travelDate = new Date(travelDate);
     if (seatsRequired) query.availableSeats = { $gte: parseInt(seatsRequired, 10) };
 

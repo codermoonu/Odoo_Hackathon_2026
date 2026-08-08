@@ -6,14 +6,16 @@ import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import { SelectField, FormField } from "../../components/ui/FormField";
 import LocationAutocomplete from "../../components/ride/LocationAutocomplete";
-import { useAuth } from "../../hooks/useAuth";
 import { getVehicles } from "../../services/vehicle";
 import { previewRoute } from "../../services/route";
-import { createTrip } from "../../services/trip";
-import { formatCurrency } from "../../utils/formatDate";
+import { publishRide } from "../../services/ride";
+import { formatCurrency, formatDateTime } from "../../utils/formatDate";
+
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 function OfferRide() {
-  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [vehicles, setVehicles] = useState([]);
@@ -21,6 +23,8 @@ function OfferRide() {
   const [vehicleId, setVehicleId] = useState("");
   const [pickup, setPickup] = useState(null);
   const [destination, setDestination] = useState(null);
+  const [travelDate, setTravelDate] = useState(todayIsoDate());
+  const [travelTime, setTravelTime] = useState("");
   const [seats, setSeats] = useState(1);
   const [fare, setFare] = useState("");
 
@@ -81,23 +85,24 @@ function OfferRide() {
     if (!selectedVehicle) return setSubmitError("Add a vehicle before offering a ride");
     if (!pickup || !destination) return setSubmitError("Choose a pickup and destination");
     if (!route) return setSubmitError("Waiting on the route calculation — try again in a moment");
+    if (!travelDate || !travelTime) return setSubmitError("Set a travel date and time");
 
     setSubmitting(true);
     try {
-      const trip = await createTrip({
-        driver_name: user?.name,
-        vehicle: `${selectedVehicle.make || ""} ${selectedVehicle.model} (${selectedVehicle.registrationNumber})`.trim(),
-        start_address: pickup.address,
-        start_coords: { lat: pickup.lat, lng: pickup.lng },
-        dest_address: destination.address,
-        dest_coords: { lat: destination.lat, lng: destination.lng },
-        route_geometry: route.geometry,
-        distance_km: route.distance_km,
-        duration_mins: route.duration_mins,
-        fare_per_seat: Number(fare) || route.fare_per_seat,
-        available_seats: Number(seats),
+      const ride = await publishRide({
+        vehicleId,
+        pickupLocation: pickup.address,
+        pickupLat: pickup.lat,
+        pickupLng: pickup.lng,
+        destination: destination.address,
+        destinationLat: destination.lat,
+        destinationLng: destination.lng,
+        travelDate,
+        travelTime,
+        farePerSeat: Number(fare) || route.fare_per_seat,
+        availableSeats: Number(seats),
       });
-      setPublished(trip);
+      setPublished(ride);
     } catch (err) {
       setSubmitError(err.message || "Could not publish this ride");
     } finally {
@@ -115,15 +120,18 @@ function OfferRide() {
             </div>
             <h2 className="font-display text-xl font-bold">Ride published!</h2>
             <p className="text-sm text-text-dim">
-              {published.start_address} <ArrowLeftRight size={12} className="mx-1 inline" /> {published.dest_address}
+              {published.pickupLocation} <ArrowLeftRight size={12} className="mx-1 inline" /> {published.destination}
               {" — "}
-              {published.available_seats} seats at {formatCurrency(published.fare_per_seat)} each.
+              {published.availableSeats} seats at {formatCurrency(published.farePerSeat)} each.
+            </p>
+            <p className="text-xs text-text-faint">
+              {formatDateTime(published.travelDate)} · {published.travelTime}
             </p>
             <div className="mt-2 flex gap-3">
-              <Button variant="secondary" onClick={() => navigate("/trips")}>
-                View my trips
-              </Button>
               <Button onClick={() => navigate("/rides/available")}>Browse rides</Button>
+              <Button variant="secondary" onClick={() => navigate("/rides/offer")}>
+                Publish another
+              </Button>
             </div>
           </Card>
         </div>
@@ -209,6 +217,24 @@ function OfferRide() {
                   </span>
                 </div>
               )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  label="Travel date"
+                  type="date"
+                  min={todayIsoDate()}
+                  required
+                  value={travelDate}
+                  onChange={(e) => setTravelDate(e.target.value)}
+                />
+                <FormField
+                  label="Travel time"
+                  type="time"
+                  required
+                  value={travelTime}
+                  onChange={(e) => setTravelTime(e.target.value)}
+                />
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <FormField

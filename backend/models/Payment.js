@@ -4,6 +4,7 @@ const paymentSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     trip: { type: mongoose.Schema.Types.ObjectId, ref: "Trip" },
+    booking: { type: mongoose.Schema.Types.ObjectId, ref: "Booking" },
 
     // Wallet payments settle instantly from the user's own balance and have
     // no Razorpay order at all — `sparse` so those don't collide on the

@@ -11,6 +11,7 @@ import Dashboard from "../pages/dashboard/Dashboard";
 import FindRide from "../pages/ride/FindRide";
 import OfferRide from "../pages/ride/OfferRide";
 import AvailableRides from "../pages/ride/AvailableRides";
+import BookingPayment from "../pages/ride/BookingPayment";
 import MyVehicle from "../pages/ride/MyVehicle";
 import MyTrips from "../pages/trip/MyTrips";
 import Wallet from "../pages/payment/Wallet";
@@ -145,6 +146,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Payment />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/rides/:id/pay"
+        element={
+          <ProtectedRoute>
+            <BookingPayment />
           </ProtectedRoute>
         }
       />
