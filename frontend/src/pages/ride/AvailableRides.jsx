@@ -9,7 +9,7 @@ import TripsMap from "../../components/map/TripsMap";
 import { getAllTrips } from "../../services/trip";
 import { formatCurrency, formatDateTime } from "../../utils/formatDate";
 import { getAvailableSeats, getSeatStatusLabel } from "../../utils/seat";
-
+import { useCurrentLocation } from "../../hooks/useCurrentLocation";
 const STATUS_TONE = {
   PUBLISHED: "success",
   STARTED: "violet",
@@ -33,7 +33,7 @@ function AvailableRides() {
   const [loadError, setLoadError] = useState("");
   const [view, setView] = useState("list"); // "list" | "map"
   const [hoveredTripId, setHoveredTripId] = useState(null);
-
+const { coords, status, error, requestLocation } = useCurrentLocation();
   useEffect(() => {
     let active = true;
     getAllTrips()
@@ -86,6 +86,17 @@ function AvailableRides() {
             </Link>
           </p>
         )}
+        {/* NEW: location-permission prompt for "rides near me" */}
+        {status !== "granted" && (
+          <button
+            type="button"
+            onClick={requestLocation}
+            disabled={status === "requesting"}
+            className="text-sm font-semibold text-violet-600 hover:text-violet-700 disabled:opacity-60"
+          >
+            {status === "requesting" ? "Locating…" : "Use my location to find rides nearby"}
+          </button>
+        )}
 
         <div className="flex items-center gap-1 rounded-xl border border-border bg-surface-alt/60 p-1">
           <button
@@ -108,7 +119,8 @@ function AvailableRides() {
           </button>
         </div>
       </div>
-
+       {/* NEW: error message, own line below the header row */}
+      {error && <p className="mb-4 text-xs text-red-500">{error}</p>}
       {loading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {[0, 1, 2, 3].map((i) => (
