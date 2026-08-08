@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapPin, ArrowRight, User, Car, Clock3, AlertCircle, Radio } from "lucide-react";
+import { MapPin, ArrowRight, User, Car, Clock3, AlertCircle, Radio, CheckCircle2 } from "lucide-react";
 import AppShell from "../../components/ui/AppShell";
 import Card from "../../components/ui/Card";
 import Badge from "../../components/ui/Badge";
 import { useSocket } from "../../context/SocketContext";
 import { getTripById } from "../../services/trip";
+
+// How long the "You've arrived" overlay stays up before redirecting to Find a Ride.
+const ARRIVAL_REDIRECT_MS = 7000;
 
 const TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 const TILE_ATTRIBUTION = "&copy; OpenStreetMap contributors &copy; CARTO";
@@ -53,6 +56,7 @@ function FitToRoute({ pickup, destination }) {
 
 function LiveTracking() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { joinTrip, on } = useSocket();
 
   const [trip, setTrip] = useState(null);
@@ -63,13 +67,28 @@ function LiveTracking() {
   const [liveStatus, setLiveStatus] = useState(null);
   const [isLive, setIsLive] = useState(false);
   const [simulating, setSimulating] = useState(false);
+  const [arrived, setArrived] = useState(false);
 
   const isLiveRef = useRef(false);
+  const arrivedRef = useRef(false);
   const simTimerRef = useRef(null);
 
   useEffect(() => {
     isLiveRef.current = isLive;
   }, [isLive]);
+
+  function handleArrival(destination) {
+    if (arrivedRef.current) return;
+    arrivedRef.current = true;
+    if (destination) setLiveLocation(destination);
+    if (simTimerRef.current) {
+      clearInterval(simTimerRef.current);
+      simTimerRef.current = null;
+    }
+    setSimulating(false);
+    setLiveStatus("COMPLETED");
+    setArrived(true);
+  }
 
   useEffect(() => {
     let active = true;
@@ -109,11 +128,19 @@ function LiveTracking() {
         clearInterval(simTimerRef.current);
         simTimerRef.current = null;
       }
+      if (payload.status === "COMPLETED") {
+        handleArrival(payload.location);
+        return;
+      }
       setLiveLocation(payload.location);
       if (payload.status) setLiveStatus(payload.status);
     });
     const offStatus = on("trip_status_updated", (payload) => {
       if (payload?.trip_id !== trip.trip_id) return;
+      if (payload.status === "COMPLETED") {
+        handleArrival(trip.dest_coords);
+        return;
+      }
       setLiveStatus(payload.status);
     });
 
@@ -136,9 +163,9 @@ function LiveTracking() {
       let index = 0;
       simTimerRef.current = setInterval(() => {
         index += 1;
-        if (index >= coords.length) {
-          clearInterval(simTimerRef.current);
-          simTimerRef.current = null;
+        if (index >= coords.length - 1) {
+          const [lng, lat] = coords[coords.length - 1];
+          handleArrival({ lat, lng });
           return;
         }
         const [lng, lat] = coords[index];
@@ -154,6 +181,13 @@ function LiveTracking() {
       }
     };
   }, [trip]);
+
+  // Show the "arrived" overlay for a bit, then send the rider back to search for their next ride.
+  useEffect(() => {
+    if (!arrived) return;
+    const redirectTimer = setTimeout(() => navigate("/rides/find"), ARRIVAL_REDIRECT_MS);
+    return () => clearTimeout(redirectTimer);
+  }, [arrived, navigate]);
 
   if (loading) {
     return (
@@ -210,7 +244,12 @@ function LiveTracking() {
           </div>
 
           <div className="flex items-center gap-2">
-            {isLive ? (
+            {arrived ? (
+              <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/12 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+                <CheckCircle2 size={13} />
+                Arrived
+              </span>
+            ) : isLive ? (
               <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/12 px-3 py-1.5 text-xs font-semibold text-emerald-700">
                 <Radio size={13} className="animate-pulse" />
                 Live
@@ -229,7 +268,7 @@ function LiveTracking() {
           </div>
         </Card>
 
-        <Card className="h-[65vh] overflow-hidden p-0">
+        <Card className="relative h-[65vh] overflow-hidden p-0">
           <MapContainer
             center={[trip.start_coords.lat, trip.start_coords.lng]}
             zoom={12}
@@ -245,6 +284,20 @@ function LiveTracking() {
             {liveLocation && <Marker position={[liveLocation.lat, liveLocation.lng]} icon={vehicleIcon} />}
             <FitToRoute pickup={trip.start_coords} destination={trip.dest_coords} />
           </MapContainer>
+
+          {arrived && (
+            <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-black/30 backdrop-blur-sm">
+              <div className="animate-fade-up mx-4 flex max-w-sm flex-col items-center gap-3 rounded-3xl border border-border bg-surface px-8 py-9 text-center shadow-2xl">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/12 text-emerald-700">
+                  <CheckCircle2 size={32} />
+                </div>
+                <h2 className="text-xl font-bold">Reached successfully!</h2>
+                <p className="text-sm text-text-dim">
+                  You've arrived at {trip.dest_address.split(",")[0]}. Taking you back to Find a Ride…
+                </p>
+              </div>
+            </div>
+          )}
         </Card>
       </div>
     </AppShell>
