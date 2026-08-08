@@ -1,11 +1,8 @@
 import { createContext, useContext, useState } from "react";
-import axios from "axios";
+import api from "../../services/api";
 import { useAuth } from "../../hooks/useAuth";
 
 const AdminContext = createContext(null);
-
-const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5050/api";
 
 export const AdminProvider = ({ children }) => {
   const { user } = useAuth();
@@ -18,32 +15,14 @@ export const AdminProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const getConfig = () => {
-    const token = localStorage.getItem("token");
-
-    return {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    };
-  };
-
   const fetchOrganization = async () => {
-    const response = await axios.get(
-      `${API_URL}/admin/organization`,
-      getConfig()
-    );
-
+    const response = await api.get("/admin/organization");
     setOrganization(response.data);
     return response.data;
   };
 
   const fetchEmployees = async () => {
-    const response = await axios.get(
-      `${API_URL}/admin/employees`,
-      getConfig()
-    );
-
+    const response = await api.get("/admin/employees");
     const data = response.data;
 
     const list =
@@ -57,11 +36,7 @@ export const AdminProvider = ({ children }) => {
   };
 
   const fetchVehicles = async () => {
-    const response = await axios.get(
-      `${API_URL}/admin/vehicles`,
-      getConfig()
-    );
-
+    const response = await api.get("/admin/vehicles");
     const data = response.data;
 
     const list =
@@ -74,20 +49,21 @@ export const AdminProvider = ({ children }) => {
   };
 
   const fetchEmployeeEngagement = async () => {
-    const response = await axios.get(
-      `${API_URL}/admin/employees/engagement`,
-      getConfig()
-    );
-
+    const response = await api.get("/admin/employees/engagement");
     setEngagement(response.data);
     return response.data;
   };
 
+  const addEmployee = async (data) => {
+    const response = await api.post("/admin/employees", data);
+    await fetchEmployees();
+    return response.data;
+  };
+
   const setEmployeeAccess = async (employeeId, isActive) => {
-    const response = await axios.patch(
-      `${API_URL}/admin/employees/${employeeId}/access`,
-      { isActive },
-      getConfig()
+    const response = await api.patch(
+      `/admin/employees/${employeeId}/access`,
+      { isActive }
     );
 
     await fetchEmployees();
@@ -96,26 +72,26 @@ export const AdminProvider = ({ children }) => {
   };
 
   const updateEmployee = async (employeeId, data) => {
-    const response = await axios.put(
-      `${API_URL}/admin/employees/${employeeId}`,
-      data,
-      getConfig()
-    );
+    const response = await api.put(`/admin/employees/${employeeId}`, data);
 
     await fetchEmployees();
 
     return response.data;
   };
 
-  const setVehicleStatus = async (vehicleId, status) => {
-    const response = await axios.patch(
-      `${API_URL}/admin/vehicles/${vehicleId}/status`,
-      { status },
-      getConfig()
-    );
+  const setVehicleStatus = async (vehicleId, isActive) => {
+    const response = await api.patch(`/admin/vehicles/${vehicleId}/status`, {
+      isActive,
+    });
 
     await fetchVehicles();
 
+    return response.data;
+  };
+
+  const updateOrganization = async (data) => {
+    const response = await api.put("/admin/organization", data);
+    setOrganization(response.data);
     return response.data;
   };
 
@@ -131,10 +107,7 @@ export const AdminProvider = ({ children }) => {
         fetchEmployeeEngagement(),
       ]);
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          "Failed to load admin dashboard"
-      );
+      setError(err.message || "Failed to load admin dashboard");
     } finally {
       setLoading(false);
     }
@@ -156,27 +129,26 @@ export const AdminProvider = ({ children }) => {
     fetchVehicles,
     fetchEmployeeEngagement,
 
+    addEmployee,
     setEmployeeAccess,
     updateEmployee,
     setVehicleStatus,
+    updateOrganization,
 
     loadDashboard,
   };
 
   return (
-    <AdminContext.Provider value={value}>
-      {children}
-    </AdminContext.Provider>
+    <AdminContext.Provider value={value}>{children}</AdminContext.Provider>
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- context + hook co-location matches AuthContext's pattern
 export const useAdmin = () => {
   const context = useContext(AdminContext);
 
   if (!context) {
-    throw new Error(
-      "useAdmin must be used inside AdminProvider"
-    );
+    throw new Error("useAdmin must be used inside AdminProvider");
   }
 
   return context;

@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Users,
   UserCheck,
@@ -7,11 +8,13 @@ import {
   Building2,
   Activity,
   RefreshCw,
+  ArrowRight,
 } from "lucide-react";
 
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import { useAdmin } from "./AdminContext";
+import AdminShell from "./AdminShell";
 
 
 function StatCard({ title, value, icon: Icon, description }) {
@@ -45,6 +48,7 @@ function StatCard({ title, value, icon: Icon, description }) {
 
 
 function AdminDashboard() {
+  const navigate = useNavigate();
   const {
     organization,
     employees,
@@ -84,16 +88,19 @@ function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <p className="text-sm text-text-dim">
-          Loading dashboard...
-        </p>
-      </div>
+      <AdminShell title="Admin Dashboard">
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <p className="text-sm text-text-dim">
+            Loading dashboard...
+          </p>
+        </div>
+      </AdminShell>
     );
   }
 
 
   return (
+    <AdminShell title="Admin Dashboard">
     <div className="space-y-6">
 
       {/* Header */}
@@ -133,7 +140,7 @@ function AdminDashboard() {
 
 
       {/* Organization */}
-      <Card className="p-5">
+      <Card className="flex items-center justify-between gap-3 p-5">
         <div className="flex items-center gap-3">
 
           <div className="rounded-xl bg-violet-500/10 p-3">
@@ -156,6 +163,14 @@ function AdminDashboard() {
           </div>
 
         </div>
+
+        <Button
+          variant="secondary"
+          onClick={() => navigate("/admin/settings")}
+        >
+          Settings
+          <ArrowRight size={16} />
+        </Button>
       </Card>
 
 
@@ -197,21 +212,31 @@ function AdminDashboard() {
       <div className="grid gap-5 lg:grid-cols-2">
 
         <Card className="p-5">
-          <div className="flex items-center gap-3">
-            <Users
-              size={20}
-              className="text-violet-400"
-            />
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Users
+                size={20}
+                className="text-violet-400"
+              />
 
-            <div>
-              <h2 className="font-display font-bold">
-                Employee Management
-              </h2>
+              <div>
+                <h2 className="font-display font-bold">
+                  Employee Management
+                </h2>
 
-              <p className="text-xs text-text-dim">
-                Manage employee records and access.
-              </p>
+                <p className="text-xs text-text-dim">
+                  Manage employee records and access.
+                </p>
+              </div>
             </div>
+
+            <Button
+              variant="secondary"
+              onClick={() => navigate("/admin/employees")}
+            >
+              Manage
+              <ArrowRight size={16} />
+            </Button>
           </div>
 
           <div className="mt-5 grid grid-cols-2 gap-3">
@@ -241,21 +266,31 @@ function AdminDashboard() {
 
 
         <Card className="p-5">
-          <div className="flex items-center gap-3">
-            <Car
-              size={20}
-              className="text-violet-400"
-            />
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Car
+                size={20}
+                className="text-violet-400"
+              />
 
-            <div>
-              <h2 className="font-display font-bold">
-                Vehicle Management
-              </h2>
+              <div>
+                <h2 className="font-display font-bold">
+                  Vehicle Management
+                </h2>
 
-              <p className="text-xs text-text-dim">
-                Monitor your organization's vehicles.
-              </p>
+                <p className="text-xs text-text-dim">
+                  Monitor your organization's vehicles.
+                </p>
+              </div>
             </div>
+
+            <Button
+              variant="secondary"
+              onClick={() => navigate("/admin/vehicles")}
+            >
+              Manage
+              <ArrowRight size={16} />
+            </Button>
           </div>
 
           <div className="mt-5 rounded-xl bg-white/5 p-4">
@@ -315,6 +350,7 @@ function AdminDashboard() {
       </Card>
 
     </div>
+    </AdminShell>
   );
 }
 

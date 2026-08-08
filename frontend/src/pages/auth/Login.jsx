@@ -231,7 +231,7 @@ function Login() {
           </div>
 
           <Link
-            to="/admin-login"
+            to="/admin/login"
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-violet-500/30 px-4 py-3 text-sm font-semibold text-violet-600 transition-colors hover:bg-violet-500/10"
           >
             <ShieldCheck size={17} />
