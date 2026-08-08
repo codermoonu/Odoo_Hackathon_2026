@@ -1,5 +1,5 @@
-import { Car } from "lucide-react";
 import { useJourney } from "../context/JourneyContext";
+import { assets } from "../assets/assets";
 
 // Owns only the intro chrome + ambient violet scene. JourneyContext drives
 // the phase timeline and navigates to /landing once it completes.
@@ -33,10 +33,10 @@ function Splash() {
         }`}
       >
         <div className="flex items-center gap-2.5">
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-[0_0_0_1px_rgba(167,139,250,0.35),0_8px_24px_rgba(124,58,237,0.45)]">
-            <Car size={22} strokeWidth={2} />
+          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-[0_0_0_1px_rgba(167,139,250,0.35),0_8px_24px_rgba(124,58,237,0.45)]">
+            <img src={assets.logo} alt="" className="h-6 w-6" />
           </span>
-          <span className="font-display text-xl font-bold tracking-[0.14em] text-text">CARPOOL</span>
+          <span className="font-display text-xl font-bold tracking-[0.14em] text-text">WAYFLOW</span>
         </div>
 
         <p className="mt-4 text-xs font-semibold tracking-[0.18em] text-violet-300 uppercase">

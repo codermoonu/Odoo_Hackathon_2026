@@ -70,7 +70,7 @@ function Wallet() {
         amount: order.amount,
         currency: order.currency,
         order_id: order.id,
-        name: "CARPOOL",
+        name: "WAYFLOW",
         description: "Wallet top-up",
         theme: { color: "#7c3aed" },
         prefill: { name: user?.name, email: user?.email },

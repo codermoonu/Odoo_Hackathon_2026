@@ -1,6 +1,6 @@
 // Trip documents don't carry a driver user-id (only a free-text driver_name),
 // so "mine" is tracked client-side: every trip this browser has published.
-const STORAGE_KEY = "carpool_my_trip_ids";
+const STORAGE_KEY = "wayflow_my_trip_ids";
 
 export function getPublishedTripIds() {
   try {

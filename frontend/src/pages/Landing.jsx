@@ -72,7 +72,7 @@ function Landing() {
         <nav className="relative z-20 flex items-center justify-between gap-4 px-5 py-6 sm:px-8 lg:px-12">
           <div className="flex items-center gap-2.5">
             <img src={assets.logo} alt="" className="h-8 w-8" />
-            <span className="font-display text-lg font-bold tracking-wide">CARPOOL</span>
+            <span className="font-display text-lg font-bold tracking-wide">WAYFLOW</span>
           </div>
 
           <div className="hidden items-center gap-9 md:flex">
@@ -173,15 +173,10 @@ function Landing() {
             </div>
           </div>
 
-          <div className="relative animate-fade-up" style={{ animationDelay: "120ms" }}>
-            <div
-              aria-hidden="true"
-              className="absolute inset-0 -z-10 rounded-[2.5rem] bg-gradient-to-br from-violet-600/25 to-purple-500/10 blur-2xl"
-            />
-            <div className="overflow-hidden rounded-[2rem] border border-border bg-surface/60 p-8 shadow-[0_30px_70px_rgba(6,4,16,0.55)] backdrop-blur">
-              <img src={assets.main_car} alt="" className="w-full drop-shadow-[0_20px_40px_rgba(124,58,237,0.35)]" />
-            </div>
-          </div>
+          {/* The hero car itself is the persistent CarRig layer (see App.jsx) —
+              it drives in from the splash screen and parks here. This spacer
+              only reserves its footprint so the two-column grid stays balanced. */}
+          <div className="aspect-[4/3] w-full" aria-hidden="true" />
         </div>
       </section>
 
@@ -275,7 +270,7 @@ function Landing() {
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 sm:flex-row">
           <div className="flex items-center gap-2.5">
             <img src={assets.logo} alt="" className="h-7 w-7" />
-            <span className="font-display text-sm font-bold tracking-wide">CARPOOL</span>
+            <span className="font-display text-sm font-bold tracking-wide">WAYFLOW</span>
           </div>
           <div className="flex items-center gap-5">
             <img src={assets.gmail_logo} alt="Email" className="h-5 w-5 opacity-60 transition-opacity hover:opacity-100" />
@@ -283,7 +278,7 @@ function Landing() {
             <img src={assets.instagram_logo} alt="Instagram" className="h-5 w-5 opacity-60 transition-opacity hover:opacity-100" />
             <img src={assets.twitter_logo} alt="Twitter" className="h-5 w-5 opacity-60 transition-opacity hover:opacity-100" />
           </div>
-          <p className="text-xs text-text-faint">© {new Date().getFullYear()} CARPOOL. All rights reserved.</p>
+          <p className="text-xs text-text-faint">© {new Date().getFullYear()} WAYFLOW. All rights reserved.</p>
         </div>
       </footer>
     </div>

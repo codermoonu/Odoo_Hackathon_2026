@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   CARPOOL design tokens — violet SaaS palette. Every surface reads these
+   WAYFLOW design tokens — violet SaaS palette. Every surface reads these
    (via Tailwind's @theme bridge below) instead of raw hex, so re-tinting
    the brand later is a one-file change. Built-in Tailwind violet/purple/
    indigo scales are used directly for accents (bg-violet-600 etc.) —
@@ -118,6 +118,26 @@ button {
   animation-name: splash-progress;
   animation-timing-function: linear;
   animation-fill-mode: forwards;
+}
+
+/* the tiny suspension-settle bounce once the hero car parks on landing */
+@keyframes car-settle {
+  0% {
+    transform: scale(1, 1);
+  }
+  40% {
+    transform: scale(1.02, 0.965);
+  }
+  70% {
+    transform: scale(0.99, 1.012);
+  }
+  100% {
+    transform: scale(1, 1);
+  }
+}
+
+.car-rig-settle {
+  animation: car-settle 0.6s cubic-bezier(0.34, 1.15, 0.4, 1) 1;
 }
 
 @media (prefers-reduced-motion: reduce) {
