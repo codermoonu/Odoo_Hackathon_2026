@@ -3,6 +3,9 @@ const User = require("../models/User");
 const generateToken = require("../utils/generateToken");
 const cloudinary = require("../config/cloudinary");
 
+/* =========================================================
+   REGISTER USER
+========================================================= */
 
 const registerUser = async (req, res) => {
   try {
@@ -14,8 +17,10 @@ const registerUser = async (req, res) => {
       });
     }
 
+    const normalizedEmail = email.toLowerCase().trim();
+
     const existingUser = await User.findOne({
-      email: email.toLowerCase(),
+      email: normalizedEmail,
     });
 
     if (existingUser) {
@@ -28,8 +33,8 @@ const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const user = await User.create({
-      name,
-      email: email.toLowerCase(),
+      name: name.trim(),
+      email: normalizedEmail,
       password: hashedPassword,
     });
 
@@ -41,6 +46,11 @@ const registerUser = async (req, res) => {
         name: user.name,
         email: user.email,
         image: user.image,
+
+        // IMPORTANT FOR ADMIN LOGIN
+        role: user.role,
+        organization: user.organization,
+        isActive: user.isActive,
       },
       token,
     });
@@ -48,12 +58,15 @@ const registerUser = async (req, res) => {
     console.error("Register error:", error);
 
     res.status(500).json({
-      message: error.message,
+      message: error.message || "Registration failed",
     });
   }
 };
 
 
+/* =========================================================
+   LOGIN USER
+========================================================= */
 
 const loginUser = async (req, res) => {
   try {
@@ -65,8 +78,10 @@ const loginUser = async (req, res) => {
       });
     }
 
+    const normalizedEmail = email.toLowerCase().trim();
+
     const user = await User.findOne({
-      email: email.toLowerCase(),
+      email: normalizedEmail,
     });
 
     if (!user) {
@@ -75,7 +90,10 @@ const loginUser = async (req, res) => {
       });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(
+      password,
+      user.password
+    );
 
     if (!isMatch) {
       return res.status(401).json({
@@ -102,6 +120,11 @@ const loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         image: user.image,
+
+        // IMPORTANT
+        role: user.role,
+        organization: user.organization,
+        isActive: user.isActive,
       },
       token,
     });
@@ -109,24 +132,35 @@ const loginUser = async (req, res) => {
     console.error("Login error:", error);
 
     res.status(500).json({
-      message: error.message,
+      message: error.message || "Login failed",
     });
   }
 };
 
 
+/* =========================================================
+   UPDATE PROFILE IMAGE - CLOUDINARY
+========================================================= */
+
 const updateProfileImage = async (req, res) => {
   try {
+    /* -----------------------------------------
+       1. Check if an image was uploaded
+    ----------------------------------------- */
+
     if (!req.file) {
       return res.status(400).json({
         message: "Please select a profile image",
       });
     }
 
-  
+
+    /* -----------------------------------------
+       2. Get logged-in user
+    ----------------------------------------- */
+
     const userId = req.user._id || req.user.id;
 
-    
     const user = await User.findById(userId);
 
     if (!user) {
@@ -135,25 +169,37 @@ const updateProfileImage = async (req, res) => {
       });
     }
 
-  
-    const uploadResult = await new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder: "wayflo/profile-images",
-          resource_type: "image",
-        },
-        (error, result) => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve(result);
-          }
-        }
-      );
 
-      uploadStream.end(req.file.buffer);
-    });
+    /* -----------------------------------------
+       3. Upload image to Cloudinary
+    ----------------------------------------- */
 
+    const uploadResult = await new Promise(
+      (resolve, reject) => {
+        const uploadStream =
+          cloudinary.uploader.upload_stream(
+            {
+              folder: "wayflo/profile-images",
+              resource_type: "image",
+            },
+            (error, result) => {
+              if (error) {
+                reject(error);
+              } else {
+                resolve(result);
+              }
+            }
+          );
+
+        uploadStream.end(req.file.buffer);
+      }
+    );
+
+
+    /* -----------------------------------------
+       4. Delete old Cloudinary image
+       if the user already has one
+    ----------------------------------------- */
 
     if (
       user.image &&
@@ -162,33 +208,34 @@ const updateProfileImage = async (req, res) => {
       try {
         const imageUrl = user.image;
 
-
         const uploadMarker = "/upload/";
 
-        const uploadIndex = imageUrl.indexOf(uploadMarker);
+        const uploadIndex =
+          imageUrl.indexOf(uploadMarker);
 
         if (uploadIndex !== -1) {
-          let publicId = imageUrl.substring(
-            uploadIndex + uploadMarker.length
-          );
+          let publicId =
+            imageUrl.substring(
+              uploadIndex + uploadMarker.length
+            );
 
-   
-
+          // Remove version number
           publicId = publicId.replace(
             /^v\d+\//,
             ""
           );
 
-          
+          // Remove file extension
           publicId = publicId.replace(
             /\.[^/.]+$/,
             ""
           );
 
-          await cloudinary.uploader.destroy(publicId);
+          await cloudinary.uploader.destroy(
+            publicId
+          );
         }
       } catch (deleteError) {
-    
         console.error(
           "Could not delete old Cloudinary image:",
           deleteError.message
@@ -197,10 +244,18 @@ const updateProfileImage = async (req, res) => {
     }
 
 
+    /* -----------------------------------------
+       5. Save new Cloudinary URL in MongoDB
+    ----------------------------------------- */
+
     user.image = uploadResult.secure_url;
 
     await user.save();
 
+
+    /* -----------------------------------------
+       6. Send updated user to frontend
+    ----------------------------------------- */
 
     res.status(200).json({
       message: "Profile picture updated successfully",
@@ -210,8 +265,14 @@ const updateProfileImage = async (req, res) => {
         name: user.name,
         email: user.email,
         image: user.image,
+
+        // Keep these available to frontend
+        role: user.role,
+        organization: user.organization,
+        isActive: user.isActive,
       },
     });
+
   } catch (error) {
     console.error(
       "Profile image upload error:",
@@ -226,6 +287,11 @@ const updateProfileImage = async (req, res) => {
   }
 };
 
+
+/* =========================================================
+   UPDATE PROFILE NAME
+========================================================= */
+
 const updateProfile = async (req, res) => {
   try {
     const { name } = req.body;
@@ -237,6 +303,7 @@ const updateProfile = async (req, res) => {
     }
 
     const userId = req.user._id || req.user.id;
+
     const user = await User.findById(userId);
 
     if (!user) {
@@ -246,19 +313,28 @@ const updateProfile = async (req, res) => {
     }
 
     user.name = name.trim();
+
     await user.save();
 
     res.status(200).json({
       message: "Profile updated successfully",
+
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         image: user.image,
+
+        role: user.role,
+        organization: user.organization,
+        isActive: user.isActive,
       },
     });
   } catch (error) {
-    console.error("Profile update error:", error);
+    console.error(
+      "Profile update error:",
+      error
+    );
 
     res.status(500).json({
       message: error.message,
@@ -266,23 +342,34 @@ const updateProfile = async (req, res) => {
   }
 };
 
+
+/* =========================================================
+   UPDATE PASSWORD
+========================================================= */
+
 const updatePassword = async (req, res) => {
   try {
-    const { currentPassword, newPassword } = req.body;
+    const {
+      currentPassword,
+      newPassword,
+    } = req.body;
 
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
-        message: "Current and new password are required",
+        message:
+          "Current and new password are required",
       });
     }
 
     if (newPassword.length < 6) {
       return res.status(400).json({
-        message: "New password must be at least 6 characters",
+        message:
+          "New password must be at least 6 characters",
       });
     }
 
     const userId = req.user._id || req.user.id;
+
     const user = await User.findById(userId);
 
     if (!user) {
@@ -291,29 +378,46 @@ const updatePassword = async (req, res) => {
       });
     }
 
-    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    const isMatch = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
 
     if (!isMatch) {
       return res.status(401).json({
-        message: "Current password is incorrect",
+        message:
+          "Current password is incorrect",
       });
     }
 
     const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
+
+    user.password = await bcrypt.hash(
+      newPassword,
+      salt
+    );
+
     await user.save();
 
     res.status(200).json({
       message: "Password updated successfully",
     });
   } catch (error) {
-    console.error("Password update error:", error);
+    console.error(
+      "Password update error:",
+      error
+    );
 
     res.status(500).json({
       message: error.message,
     });
   }
 };
+
+
+/* =========================================================
+   EXPORT
+========================================================= */
 
 module.exports = {
   registerUser,

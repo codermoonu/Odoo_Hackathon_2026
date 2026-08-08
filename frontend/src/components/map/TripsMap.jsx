@@ -2,6 +2,11 @@ import { useEffect, useMemo, useState, Fragment } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+<<<<<<< HEAD
+=======
+import { geocode, previewRoute } from "../../services/route";
+import { isValidCoord } from "../../utils/geo";
+>>>>>>> 3d29d6809371e49ff23ea438d8314ccd7424e360
 
 const TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
 const TILE_ATTRIBUTION = "&copy; OpenStreetMap contributors &copy; CARTO";
@@ -31,8 +36,58 @@ function FitToTrips({ points }) {
 }
 
 function TripsMap({ trips = [], activeTripId = null, onSelectTrip = () => {} }) {
+<<<<<<< HEAD
   const plottable = trips.filter(
     (t) => t.pickupLat != null && t.pickupLng != null && t.destLat != null && t.destLng != null
+=======
+  const [resolved, setResolved] = useState([]);
+  const [resolving, setResolving] = useState(false);
+  const [routeLines, setRouteLines] = useState({});
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function resolveTrips() {
+      setResolving(true);
+      const out = [];
+
+      // Sequential, not Promise.all — plays nice with Nominatim's ~1 req/sec usage policy
+      for (const trip of trips) {
+        // Trip documents store coords as start_coords/dest_coords; pickupLat/destLat
+        // are kept as a fallback shape only, so this only geocodes when neither exists.
+        const pickup = isValidCoord(trip.start_coords)
+          ? trip.start_coords
+          : trip.pickupLat != null && trip.pickupLng != null
+            ? { lat: trip.pickupLat, lng: trip.pickupLng }
+            : await geocodeAddress(trip.start_address);
+
+        const dest = isValidCoord(trip.dest_coords)
+          ? trip.dest_coords
+          : trip.destLat != null && trip.destLng != null
+            ? { lat: trip.destLat, lng: trip.destLng }
+            : await geocodeAddress(trip.dest_address);
+
+        if (cancelled) return;
+        if (isValidCoord(pickup) && isValidCoord(dest)) out.push({ trip, pickup, dest });
+      }
+
+      if (!cancelled) {
+        setResolved(out);
+        setResolving(false);
+      }
+    }
+
+    resolveTrips();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [trips]);
+
+  const points = useMemo(
+    () => resolved.flatMap(({ pickup, dest }) => [[pickup.lat, pickup.lng], [dest.lat, dest.lng]]),
+    [resolved]
+>>>>>>> 3d29d6809371e49ff23ea438d8314ccd7424e360
   );
 
   const points = useMemo(

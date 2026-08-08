@@ -5,6 +5,7 @@ import {
   ArrowRight,
   ShieldCheck,
   CreditCard,
+  Wallet as WalletIcon,
   CheckCircle2,
   Clock3,
   User,
@@ -17,7 +18,7 @@ import Button from "../../components/ui/Button";
 import MapView from "../../components/map/MapView";
 import { useAuth } from "../../hooks/useAuth";
 import { getTripById } from "../../services/trip";
-import { createOrder, verifyPayment } from "../../services/payment";
+import { createOrder, verifyPayment, payWithWallet, getWalletBalance } from "../../services/payment";
 import { PAYMENT_PURPOSE, RAZORPAY_CHECKOUT_SRC } from "../../utils/constants";
 import { formatCurrency, formatDateTime } from "../../utils/formatDate";
 
@@ -41,8 +42,10 @@ function Payment() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [walletProcessing, setWalletProcessing] = useState(false);
   const [payError, setPayError] = useState("");
   const [paid, setPaid] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -55,6 +58,13 @@ function Payment() {
       })
       .finally(() => {
         if (active) setLoading(false);
+      });
+    getWalletBalance()
+      .then((balance) => {
+        if (active) setWalletBalance(balance);
+      })
+      .catch(() => {
+        // Wallet option just stays hidden if this fails — Razorpay still works.
       });
     return () => {
       active = false;
@@ -107,6 +117,25 @@ function Payment() {
     } catch (err) {
       setPayError(err.message || "Could not start the payment");
       setProcessing(false);
+    }
+  }
+
+  async function handleWalletPay() {
+    if (!trip) return;
+    setPayError("");
+    setWalletProcessing(true);
+    try {
+      await payWithWallet({
+        amount: trip.fare_per_seat,
+        purpose: PAYMENT_PURPOSE.tripFare,
+        tripId: trip._id,
+        notes: { trip_id: trip.trip_id, route: `${trip.start_address} -> ${trip.dest_address}` },
+      });
+      setPaid(true);
+    } catch (err) {
+      setPayError(err.message || "Could not pay with wallet");
+    } finally {
+      setWalletProcessing(false);
     }
   }
 
@@ -214,14 +243,60 @@ function Payment() {
               </div>
             )}
 
-            <Button loading={processing} className="w-full justify-center" onClick={handlePay}>
+            <Button
+              loading={processing}
+              disabled={walletProcessing}
+              className="w-full justify-center"
+              onClick={handlePay}
+            >
               <CreditCard size={16} />
-              Pay {formatCurrency(trip.fare_per_seat)}
+              Pay with Razorpay
             </Button>
+
+            {walletBalance != null && (
+              <>
+                <div className="flex items-center gap-3 text-xs text-text-faint">
+                  <span className="h-px flex-1 bg-border" />
+                  or
+                  <span className="h-px flex-1 bg-border" />
+                </div>
+
+                <div className="rounded-xl border border-border bg-black/[0.02] p-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-1.5 text-text-dim">
+                      <WalletIcon size={14} className="text-violet-600" />
+                      Wallet balance
+                    </span>
+                    <span className="font-semibold text-text">{formatCurrency(walletBalance)}</span>
+                  </div>
+
+                  <Button
+                    variant="secondary"
+                    loading={walletProcessing}
+                    disabled={processing || walletBalance < trip.fare_per_seat}
+                    className="mt-3 w-full justify-center"
+                    onClick={handleWalletPay}
+                  >
+                    <WalletIcon size={16} />
+                    Pay with Wallet
+                  </Button>
+
+                  {walletBalance < trip.fare_per_seat && (
+                    <p className="mt-2 text-xs text-text-faint">
+                      Insufficient balance —{" "}
+                      <Link to="/wallet" className="font-semibold text-violet-600 hover:text-violet-700">
+                        top up your wallet
+                      </Link>{" "}
+                      first.
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
 
             <p className="flex items-center gap-1.5 text-xs text-text-faint">
               <ShieldCheck size={13} />
-              Secured by Razorpay. Your seat is confirmed once payment succeeds.
+              Your seat is confirmed once payment succeeds.
             </p>
           </Card>
         </div>

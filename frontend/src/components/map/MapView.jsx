@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Polyline, useMap, useMapEvents } from 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { previewRoute } from "../../services/route";
+import { isValidCoord } from "../../utils/geo";
 
 const TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 const TILE_ATTRIBUTION = "&copy; OpenStreetMap contributors &copy; CARTO";
@@ -25,12 +26,14 @@ const destIcon = pinIcon("#ec4899");     // pink, for contrast
 function FitBounds({ pickup, destination }) {
   const map = useMap();
   useEffect(() => {
-    if (pickup && destination) {
+    const validPickup = isValidCoord(pickup);
+    const validDest = isValidCoord(destination);
+    if (validPickup && validDest) {
       const bounds = L.latLngBounds([[pickup.lat, pickup.lng], [destination.lat, destination.lng]]);
       map.fitBounds(bounds, { padding: [60, 60] });
-    } else if (pickup) {
+    } else if (validPickup) {
       map.setView([pickup.lat, pickup.lng], 14);
-    } else if (destination) {
+    } else if (validDest) {
       map.setView([destination.lat, destination.lng], 14);
     }
   }, [pickup, destination, map]);
@@ -60,7 +63,7 @@ function MapView({ pickup, destination, activeField = null, onPick = () => {}, s
   useEffect(() => {
     let cancelled = false;
     async function fetchRoute() {
-      if (!pickup || !destination) {
+      if (!isValidCoord(pickup) || !isValidCoord(destination)) {
         setRoute(null);
         return;
       }
@@ -81,8 +84,8 @@ function MapView({ pickup, destination, activeField = null, onPick = () => {}, s
   }, [pickup, destination]);
 
   const center = useMemo(() => {
-    if (pickup) return [pickup.lat, pickup.lng];
-    if (destination) return [destination.lat, destination.lng];
+    if (isValidCoord(pickup)) return [pickup.lat, pickup.lng];
+    if (isValidCoord(destination)) return [destination.lat, destination.lng];
     return DEFAULT_CENTER;
   }, [pickup, destination]);
 
@@ -95,8 +98,8 @@ function MapView({ pickup, destination, activeField = null, onPick = () => {}, s
       )}
       <MapContainer center={center} zoom={12} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
         <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
-        {pickup && <Marker position={[pickup.lat, pickup.lng]} icon={pickupIcon} />}
-        {destination && <Marker position={[destination.lat, destination.lng]} icon={destIcon} />}
+        {isValidCoord(pickup) && <Marker position={[pickup.lat, pickup.lng]} icon={pickupIcon} />}
+        {isValidCoord(destination) && <Marker position={[destination.lat, destination.lng]} icon={destIcon} />}
         {route?.geometry?.coordinates && (
           <Polyline
             positions={route.geometry.coordinates.map(([lng, lat]) => [lat, lng])}

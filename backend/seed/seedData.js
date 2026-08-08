@@ -75,6 +75,7 @@ async function main() {
   if (!process.env.MONGO_URI) {
     throw new Error("MONGO_URI not set — check backend/.env");
   }
+  const now = new Date();
   await mongoose.connect(process.env.MONGO_URI);
   console.log("[seed] connected to MongoDB");
 
@@ -109,19 +110,23 @@ async function main() {
 
   // 2. Employee users — clustered around South Kolkata, each near
   //    at least one other user so "nearby" search has real hits.
+  // isActive/loginDaysAgo give the admin dashboard's engagement charts real
+  // variety to show instead of an all-active, all-never-logged-in flat line.
   const employeeSeeds = [
-    { name: "Rohan Das", location: LOCATIONS.jadavpur, isDriver: true, phone: 9830012345 },
-    { name: "Priya Bose", location: LOCATIONS.ballygunge, isDriver: true, phone: 9830012346 },
-    { name: "Sourav Ghosh", location: LOCATIONS.gariahat, isDriver: true, phone: 9830012347 },
-    { name: "Meera Iyer", location: LOCATIONS.jadavpur, isDriver: false, phone: 9830012348 },
-    { name: "Arjun Mukherjee", location: LOCATIONS.garia, isDriver: true, phone: 9830012349 },
-    { name: "Ishita Roy", location: LOCATIONS.ballygunge, isDriver: false, phone: 9830012350 },
+    { name: "Rohan Das", location: LOCATIONS.jadavpur, isDriver: true, phone: 9830012345, isActive: true, loginDaysAgo: 1 },
+    { name: "Priya Bose", location: LOCATIONS.ballygunge, isDriver: true, phone: 9830012346, isActive: true, loginDaysAgo: 3 },
+    { name: "Sourav Ghosh", location: LOCATIONS.gariahat, isDriver: true, phone: 9830012347, isActive: true, loginDaysAgo: 20 },
+    { name: "Meera Iyer", location: LOCATIONS.jadavpur, isDriver: false, phone: 9830012348, isActive: true, loginDaysAgo: null },
+    { name: "Arjun Mukherjee", location: LOCATIONS.garia, isDriver: true, phone: 9830012349, isActive: false, loginDaysAgo: 15 },
+    { name: "Ishita Roy", location: LOCATIONS.ballygunge, isDriver: false, phone: 9830012350, isActive: true, loginDaysAgo: 2 },
   ];
 
   const pw = await hashed(SEED_PASSWORD);
   const users = [];
   for (let i = 0; i < employeeSeeds.length; i++) {
     const seed = employeeSeeds[i];
+    const lastLoginAt =
+      seed.loginDaysAgo == null ? undefined : new Date(now.getTime() - seed.loginDaysAgo * 24 * 60 * 60 * 1000);
     const user = await User.create({
       name: seed.name,
       email: `${seed.name.toLowerCase().replace(/\s+/g, ".")}@wayflow-seed.com`,
@@ -130,7 +135,8 @@ async function main() {
       organization: org._id,
       employeeId: `EMP-${String(i + 2).padStart(4, "0")}`,
       phone: seed.phone,
-      isActive: true,
+      isActive: seed.isActive,
+      lastLoginAt,
     });
     users.push({ user, ...seed });
   }
@@ -155,7 +161,9 @@ async function main() {
       model: v.model,
       registrationNumber: `WB-SEED-${String(i + 1).padStart(3, "0")}`,
       seatingCapacity: v.seats,
-      isActive: true,
+      // Keep this in sync with the owner's access — a revoked employee's
+      // vehicle is suspended too, so the fleet meter has a real red slice.
+      isActive: drivers[i].isActive !== false,
     });
     vehicles.push({ vehicle, driver: drivers[i] });
   }
@@ -165,7 +173,6 @@ async function main() {
   //    An explicit list (not a generic loop) so each trip's purpose in
   //    testing is obvious: which ones are "live" for Live Tracking, which
   //    are payable in Find a Ride, and which cover the other My Trips states.
-  const now = new Date();
 
   // Trip status -> Ride status (Ride's enum spells these differently).
   const RIDE_STATUS = {
@@ -199,6 +206,18 @@ async function main() {
 
     // Cancelled — the other My Trips status worth being able to see.
     { start: "rajarhat", dest: "garia", driverIndex: 0, status: "CANCELLED", dayOffset: 1 },
+
+    // Historical completed trips spread across the last several months —
+    // without these every trip lands in the current month, which leaves
+    // the Reports page's month-by-month fuel efficiency and financial
+    // summary with only one data point to show.
+    { start: "jadavpur", dest: "parkCircus", driverIndex: 1, status: "COMPLETED", dayOffset: -150, progress: 1 },
+    { start: "ballygunge", dest: "rajarhat", driverIndex: 2, status: "COMPLETED", dayOffset: -120, progress: 1 },
+    { start: "garia", dest: "scienceCity", driverIndex: 3, status: "COMPLETED", dayOffset: -92, progress: 1 },
+    { start: "gariahat", dest: "saltLake", driverIndex: 0, status: "COMPLETED", dayOffset: -85, progress: 1 },
+    { start: "jadavpur", dest: "rajarhat", driverIndex: 2, status: "COMPLETED", dayOffset: -60, progress: 1 },
+    { start: "ballygunge", dest: "parkCircus", driverIndex: 3, status: "COMPLETED", dayOffset: -30, progress: 1 },
+    { start: "scienceCity", dest: "garia", driverIndex: 1, status: "COMPLETED", dayOffset: -25, progress: 1 },
   ];
 
   const tripDocs = [];
@@ -241,14 +260,12 @@ async function main() {
       status: plan.status,
       current_location: currentLocation,
     });
-    // Mongoose only auto-sets createdAt if not supplied — override it after
-    // creation so it matches travelDate exactly (create() with an explicit
-    // createdAt in the doc body is unreliable across mongoose versions).
-    await Trip.updateOne(
-      { _id: trip._id },
-      { $set: { createdAt: travelDate } },
-      { timestamps: false }
-    );
+    // Override createdAt after creation so it matches travelDate exactly.
+    // Mongoose's timestamps middleware silently strips createdAt from
+    // Model.updateOne() $set payloads (and `{ timestamps: false }` isn't
+    // honored by this mongoose version — it just makes the write fail with
+    // acknowledged:false) — going through the native driver bypasses that.
+    await Trip.collection.updateOne({ _id: trip._id }, { $set: { createdAt: travelDate } });
     trip.createdAt = travelDate;
     tripDocs.push(trip);
 

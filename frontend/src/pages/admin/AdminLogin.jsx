@@ -1,18 +1,31 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from "lucide-react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  ShieldCheck,
+  ArrowLeft,
+} from "lucide-react";
+
 import { useAuth } from "../../hooks/useAuth";
 import { FormField } from "../../components/ui/FormField";
 import Button from "../../components/ui/Button";
 import { isValidEmail, isNonEmpty } from "../../utils/validators";
 import { assets } from "../../assets/assets";
 
-function Login() {
-  const { login, isAuthenticated } = useAuth();
+function AdminLogin() {
+  const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
+
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [submitError, setSubmitError] = useState("");
@@ -20,13 +33,26 @@ function Login() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate(location.state?.from || "/dashboard", { replace: true });
+      if (user?.role === "admin") {
+        navigate(location.state?.from || "/admin", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
     }
-  }, [isAuthenticated, navigate, location.state]);
+  }, [isAuthenticated, user, navigate, location.state]);
 
   function update(field, value) {
-    setForm((f) => ({ ...f, [field]: value }));
-    setErrors((e) => ({ ...e, [field]: undefined }));
+    setForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+
+    setErrors((current) => ({
+      ...current,
+      [field]: undefined,
+    }));
+
+    setSubmitError("");
   }
 
   function validate() {
@@ -41,28 +67,45 @@ function Login() {
     }
 
     setErrors(next);
+
     return Object.keys(next).length === 0;
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
+
     setSubmitError("");
 
-    if (!validate()) return;
+    if (!validate()) {
+      return;
+    }
 
     setLoading(true);
 
     try {
-      await login({
+      const loggedInUser = await login({
         email: form.email.trim().toLowerCase(),
         password: form.password,
       });
 
-      navigate(location.state?.from || "/dashboard", {
-        replace: true,
-      });
+      /*
+       * The same backend login endpoint is used.
+       * We simply check whether the authenticated
+       * user's role is admin.
+       */
+
+      if (loggedInUser?.role !== "admin") {
+        setSubmitError(
+          "This account does not have administrator access."
+        );
+        return;
+      }
+
+      navigate(location.state?.from || "/admin", { replace: true });
     } catch (err) {
-      setSubmitError(err.message || "Unable to log in");
+      setSubmitError(
+        err.message || "Unable to log in as administrator"
+      );
     } finally {
       setLoading(false);
     }
@@ -75,7 +118,7 @@ function Login() {
           VISUAL PANEL
       ========================== */}
 
-      <div className="relative hidden overflow-hidden bg-gradient-to-br from-violet-700 via-violet-600 to-indigo-700 p-10 lg:flex lg:flex-col lg:justify-between">
+      <div className="relative hidden overflow-hidden bg-gradient-to-br from-violet-800 via-violet-700 to-indigo-800 p-10 lg:flex lg:flex-col lg:justify-between">
 
         <div className="absolute inset-0 bg-black/10" />
 
@@ -97,18 +140,21 @@ function Login() {
         </Link>
 
         <div className="relative z-10">
-          <img
-            src={assets.banner_car_image}
-            alt=""
-            className="w-full max-w-md drop-shadow-2xl"
-          />
 
-          <h2 className="mt-8 max-w-sm font-display text-3xl leading-tight font-bold text-white">
-            Welcome back to your daily ride.
+          <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
+            <ShieldCheck
+              size={34}
+              className="text-white"
+            />
+          </div>
+
+          <h2 className="max-w-sm font-display text-3xl leading-tight font-bold text-white">
+            WAYFLOW Administration
           </h2>
 
           <p className="mt-3 max-w-sm text-sm leading-relaxed text-violet-100/80">
-            Log in to find a seat, offer one, and keep your commute simple.
+            Manage your organization, employees, vehicles,
+            access permissions and reports from one place.
           </p>
         </div>
 
@@ -118,6 +164,9 @@ function Login() {
       </div>
 
 
+      {/* =========================
+          ADMIN LOGIN FORM
+      ========================== */}
 
       <div className="flex items-center justify-center px-6 py-12 sm:px-10">
         <div className="w-full max-w-sm">
@@ -134,24 +183,21 @@ function Login() {
             </span>
           </div>
 
+          <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/10">
+            <ShieldCheck
+              size={24}
+              className="text-violet-600"
+            />
+          </div>
+
           <h1 className="font-display text-2xl font-bold">
-            Log in
+            Administrator Login
           </h1>
 
           <p className="mt-1.5 text-sm text-text-dim">
-            New here?{" "}
-            <Link
-              to="/signup"
-              className="font-semibold text-violet-600 hover:text-violet-700"
-            >
-              Create an account
-            </Link>
+            Sign in with your administrator account.
           </p>
 
-
-          {/* =========================
-              LOGIN FORM
-          ========================== */}
 
           <form
             onSubmit={handleSubmit}
@@ -169,15 +215,17 @@ function Login() {
             )}
 
             <FormField
-              label="Email"
+              label="Admin Email"
               type="email"
               icon={Mail}
               required
               autoComplete="email"
-              placeholder="you@company.com"
+              placeholder="admin@company.com"
               value={form.email}
               error={errors.email}
-              onChange={(e) => update("email", e.target.value)}
+              onChange={(e) =>
+                update("email", e.target.value)
+              }
             />
 
             <FormField
@@ -189,11 +237,15 @@ function Login() {
               placeholder="••••••••"
               value={form.password}
               error={errors.password}
-              onChange={(e) => update("password", e.target.value)}
+              onChange={(e) =>
+                update("password", e.target.value)
+              }
               endAdornment={
                 <button
                   type="button"
-                  onClick={() => setShowPassword((v) => !v)}
+                  onClick={() =>
+                    setShowPassword((value) => !value)
+                  }
                   className="cursor-pointer rounded-md p-1 text-text-faint hover:text-text-dim"
                   aria-label={
                     showPassword
@@ -215,27 +267,20 @@ function Login() {
               loading={loading}
               className="mt-1 w-full justify-center"
             >
-              Log in
+              Admin Login
               <ArrowRight size={16} />
             </Button>
           </form>
 
 
-
-          <div className="my-6 flex items-center gap-3">
-            <div className="h-px flex-1 bg-border" />
-            <span className="text-xs text-text-faint">
-              OR
-            </span>
-            <div className="h-px flex-1 bg-border" />
-          </div>
+          {/* Back to normal login */}
 
           <Link
-            to="/admin/login"
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-violet-500/30 px-4 py-3 text-sm font-semibold text-violet-600 transition-colors hover:bg-violet-500/10"
+            to="/login"
+            className="mt-6 flex items-center justify-center gap-2 text-sm font-semibold text-violet-600 hover:text-violet-700"
           >
-            <ShieldCheck size={17} />
-            Login as Administrator
+            <ArrowLeft size={15} />
+            Back to regular login
           </Link>
 
         </div>
@@ -244,4 +289,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default AdminLogin;

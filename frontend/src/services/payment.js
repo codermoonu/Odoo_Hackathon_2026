@@ -10,6 +10,14 @@ export function verifyPayment({ razorpay_order_id, razorpay_payment_id, razorpay
     .then((res) => res.data);
 }
 
+export function payWithWallet({ amount, purpose, tripId, notes }) {
+  return api.post("/payments/wallet", { amount, purpose, tripId, notes }).then((res) => res.data);
+}
+
+export function getWalletBalance() {
+  return api.get("/payments/wallet-balance").then((res) => res.data.balance);
+}
+
 export function getMyPayments() {
   return api.get("/payments").then((res) => res.data);
 }

@@ -8,6 +8,7 @@ import { FormField } from "../../components/ui/FormField";
 import { useAuth } from "../../hooks/useAuth";
 import { createOrder, verifyPayment, getMyPayments } from "../../services/payment";
 import { PAYMENT_PURPOSE, RAZORPAY_CHECKOUT_SRC } from "../../utils/constants";
+import { computeWalletBalance } from "../../utils/wallet";
 import { formatCurrency, formatDateTime } from "../../utils/formatDate";
 
 const STATUS_ICON = { paid: CheckCircle2, created: Clock, failed: XCircle };
@@ -43,13 +44,7 @@ function Wallet() {
     loadPayments();
   }, []);
 
-  const balance = useMemo(
-    () =>
-      payments
-        .filter((p) => p.status === "paid" && p.purpose === PAYMENT_PURPOSE.walletTopup)
-        .reduce((sum, p) => sum + Number(p.amount || 0), 0),
-    [payments]
-  );
+  const balance = useMemo(() => computeWalletBalance(payments), [payments]);
 
   async function handleTopUp(e) {
     e.preventDefault();
@@ -160,6 +155,10 @@ function Wallet() {
             <ul className="divide-y divide-border">
               {payments.map((p) => {
                 const Icon = STATUS_ICON[p.status] || Clock;
+                const isWalletSpend = p.method === "wallet";
+                const label = isWalletSpend
+                  ? `${p.purpose?.replace("_", " ")} (wallet)`
+                  : p.purpose?.replace("_", " ");
                 return (
                   <li key={p._id} className="flex items-center justify-between gap-3 px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -167,13 +166,20 @@ function Wallet() {
                         <Icon size={16} />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold capitalize">{p.purpose?.replace("_", " ")}</p>
+                        <p className="text-sm font-semibold capitalize">{label}</p>
                         <p className="text-xs text-text-faint">{formatDateTime(p.createdAt)}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <Badge tone={STATUS_TONE[p.status] || "neutral"}>{p.status}</Badge>
-                      <p className="w-20 text-right text-sm font-semibold">{formatCurrency(p.amount, p.currency)}</p>
+                      <p
+                        className={`w-24 text-right text-sm font-semibold ${
+                          p.status === "paid" ? (isWalletSpend ? "text-red-700" : "text-emerald-700") : ""
+                        }`}
+                      >
+                        {p.status === "paid" ? (isWalletSpend ? "−" : "+") : ""}
+                        {formatCurrency(p.amount, p.currency)}
+                      </p>
                     </div>
                   </li>
                 );
