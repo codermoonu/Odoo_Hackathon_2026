@@ -1,6 +1,6 @@
 export const STORAGE_KEYS = {
-  token: "carpool_token",
-  user: "carpool_user",
+  token: "wayflow_token",
+  user: "wayflow_user",
 };
 
 export const PAYMENT_PURPOSE = {

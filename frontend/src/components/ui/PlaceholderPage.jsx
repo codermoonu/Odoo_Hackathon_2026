@@ -12,7 +12,7 @@ function PlaceholderPage({ title, description }) {
         <h2 className="font-display text-xl font-bold">{title}</h2>
         <p className="max-w-sm text-sm text-text-dim">
           {description ||
-            "This part of CARPOOL is coming soon. We're focused on getting your core ride-sharing flow polished first."}
+            "This part of WAYFLOW is coming soon. We're focused on getting your core ride-sharing flow polished first."}
         </p>
         <Link
           to="/dashboard"

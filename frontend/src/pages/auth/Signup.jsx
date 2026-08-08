@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Mail, Lock, User, Eye, EyeOff, Car, ArrowRight } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { FormField } from "../../components/ui/FormField";
 import Button from "../../components/ui/Button";
@@ -67,9 +67,9 @@ function Signup() {
 
         <Link to="/landing" className="relative z-10 flex items-center gap-2.5 text-white">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 backdrop-blur">
-            <Car size={18} />
+            <img src={assets.logo} alt="" className="h-5 w-5" />
           </span>
-          <span className="font-display text-lg font-bold tracking-wide">CARPOOL</span>
+          <span className="font-display text-lg font-bold tracking-wide">WAYFLOW</span>
         </Link>
 
         <div className="relative z-10">
@@ -82,14 +82,14 @@ function Signup() {
           </p>
         </div>
 
-        <p className="relative z-10 text-xs text-violet-200/60">© {new Date().getFullYear()} CARPOOL</p>
+        <p className="relative z-10 text-xs text-violet-200/60">© {new Date().getFullYear()} WAYFLOW</p>
       </div>
 
       <div className="flex items-center justify-center px-6 py-12 sm:px-10">
         <div className="w-full max-w-sm">
           <div className="mb-8 flex items-center gap-2.5 lg:hidden">
             <img src={assets.logo} alt="" className="h-8 w-8" />
-            <span className="font-display text-lg font-bold tracking-wide">CARPOOL</span>
+            <span className="font-display text-lg font-bold tracking-wide">WAYFLOW</span>
           </div>
 
           <h1 className="font-display text-2xl font-bold">Create your account</h1>
