@@ -12,7 +12,7 @@ function App() {
           {/* Mounted once, alongside the router outlet: the same DOM node
               drives from the splash screen straight into its resting spot
               on the landing page, so it never unmounts mid-journey. */}
-          <CarRig />
+          {/* <CarRig /> */}
           <AppRoutes />
         </JourneyProvider>
       </AuthProvider>
