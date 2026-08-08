@@ -1,0 +1,170 @@
+.car-rig {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: clamp(220px, 34vw, 560px);
+  aspect-ratio: 640 / 240;
+  transform-origin: center center;
+  transition-property: transform;
+  will-change: transform;
+  pointer-events: none;
+  z-index: 60;
+}
+
+.car-rig__shake {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.car-rig__shake--cruise {
+  animation: car-rig-shake 0.22s linear infinite;
+}
+
+.car-rig__shake--settle {
+  animation: car-rig-settle 0.6s cubic-bezier(0.34, 1.2, 0.4, 1) both;
+}
+
+.car-svg {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: drop-shadow(0 18px 26px rgba(0, 0, 0, 0.55));
+}
+
+.car-svg__headlight-glow,
+.car-svg__tail-glow {
+  transition: opacity 0.6s ease;
+}
+
+.car-rig__ground-glow {
+  position: absolute;
+  left: 46%;
+  bottom: -6%;
+  width: 60%;
+  height: 34%;
+  background: radial-gradient(
+    closest-side,
+    rgba(255, 232, 168, 0.45),
+    rgba(255, 232, 168, 0)
+  );
+  filter: blur(6px);
+  transition: opacity 0.7s ease;
+  pointer-events: none;
+}
+
+.car-rig__reflection {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  width: 100%;
+  height: 55%;
+  overflow: hidden;
+  opacity: 0.16;
+  transform: scaleY(-1);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), transparent 70%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), transparent 70%);
+  filter: blur(1.5px);
+  pointer-events: none;
+}
+
+.car-rig__reflection .car-svg {
+  filter: none;
+}
+
+/* wheel rotation, bucketed by phase rather than driven per-frame */
+.car-svg__wheel {
+  animation: car-wheel-spin 1s linear infinite;
+  animation-play-state: paused;
+}
+
+.wheels-idle .car-svg__wheel {
+  animation-duration: 5s;
+  animation-play-state: paused;
+}
+
+.wheels-prep .car-svg__wheel {
+  animation-duration: 0.9s;
+  animation-play-state: running;
+}
+
+.wheels-cruise .car-svg__wheel {
+  animation-duration: 0.16s;
+  animation-play-state: running;
+}
+
+.wheels-decel .car-svg__wheel {
+  animation-duration: 0.5s;
+  animation-play-state: running;
+}
+
+.wheels-stopped .car-svg__wheel {
+  animation-play-state: paused;
+}
+
+@keyframes car-wheel-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes car-rig-shake {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-0.6px, 0.4px);
+  }
+  50% {
+    transform: translate(0.5px, -0.5px);
+  }
+  75% {
+    transform: translate(-0.4px, -0.3px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes car-rig-settle {
+  0% {
+    transform: scale(1, 1);
+  }
+  40% {
+    transform: scale(1.015, 0.965);
+  }
+  70% {
+    transform: scale(0.99, 1.015);
+  }
+  100% {
+    transform: scale(1, 1);
+  }
+}
+
+@media (max-width: 900px) {
+  .car-rig {
+    width: clamp(190px, 46vw, 380px);
+  }
+}
+
+@media (max-width: 560px) {
+  .car-rig {
+    width: clamp(160px, 58vw, 300px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .car-rig__shake--cruise,
+  .car-rig__shake--settle {
+    animation: none;
+  }
+
+  .car-svg__wheel {
+    animation: none;
+  }
+
+  .car-rig__reflection {
+    display: none;
+  }
+}
