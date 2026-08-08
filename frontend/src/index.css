@@ -1,5 +1,57 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   CARPOOL design tokens — violet SaaS palette. Every surface reads these
+   (via Tailwind's @theme bridge below) instead of raw hex, so re-tinting
+   the brand later is a one-file change. Built-in Tailwind violet/purple/
+   indigo scales are used directly for accents (bg-violet-600 etc.) —
+   these tokens only cover what Tailwind doesn't ship: dark surfaces,
+   semantic text, and the two brand fonts.
+   ========================================================================== */
+@theme {
+  --color-bg: #0c0a14;
+  --color-bg-alt: #100d1c;
+  --color-surface: #161225;
+  --color-surface-alt: #1e1830;
+  --color-surface-raised: #261f3d;
+  --color-border: rgba(167, 139, 250, 0.14);
+  --color-border-strong: rgba(167, 139, 250, 0.28);
+  --color-divider: rgba(245, 243, 255, 0.08);
+
+  --color-text: #f5f3ff;
+  --color-text-dim: rgba(245, 243, 255, 0.68);
+  --color-text-faint: rgba(245, 243, 255, 0.42);
+
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger: #f87171;
+
+  --font-display: "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --shadow-card: 0 18px 40px rgba(6, 4, 16, 0.55);
+  --shadow-glow: 0 0 32px rgba(124, 58, 237, 0.35);
+}
+
+:root {
+  /* -- spacing (4/8pt rhythm) -- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* -- motion -- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.4, 1);
+  --dur-fast: 150ms;
+  --dur-base: 240ms;
+  --dur-slow: 380ms;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -13,19 +65,64 @@ body,
   min-height: 100%;
 }
 
-body {
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-  background: #f7faf7;
+html {
+  color-scheme: dark;
 }
 
-@keyframes fadeOut {
+body {
+  font-family: var(--font-body);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+::selection {
+  background: #7c3aed;
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+button {
+  font-family: inherit;
+}
+
+@keyframes fade-up {
   from {
-    opacity: 1;
-    transform: scaleX(1);
+    opacity: 0;
+    transform: translateY(14px);
   }
   to {
-    opacity: 0;
-    transform: scaleX(0.3);
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes splash-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.7s var(--ease-out) both;
+}
+
+.splash-progress-fill {
+  animation-name: splash-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-safe-only {
+    animation: none !important;
+    transition: none !important;
   }
 }
