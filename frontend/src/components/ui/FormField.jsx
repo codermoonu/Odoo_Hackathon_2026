@@ -15,7 +15,7 @@ export function FormField({
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       <label htmlFor={id} className="text-sm font-medium text-text-dim">
-        {label} {required && <span className="text-violet-400">*</span>}
+        {label} {required && <span className="text-violet-600">*</span>}
       </label>
       <div className="relative">
         {Icon && (
@@ -41,7 +41,7 @@ export function FormField({
         )}
       </div>
       {error && (
-        <span id={`${id}-error`} role="alert" className="text-xs text-red-400">
+        <span id={`${id}-error`} role="alert" className="text-xs text-red-600">
           {error}
         </span>
       )}
@@ -54,7 +54,7 @@ export function SelectField({ label, error, required, className = "", children, 
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       <label htmlFor={id} className="text-sm font-medium text-text-dim">
-        {label} {required && <span className="text-violet-400">*</span>}
+        {label} {required && <span className="text-violet-600">*</span>}
       </label>
       <select
         id={id}
@@ -67,7 +67,7 @@ export function SelectField({ label, error, required, className = "", children, 
         {children}
       </select>
       {error && (
-        <span role="alert" className="text-xs text-red-400">
+        <span role="alert" className="text-xs text-red-600">
           {error}
         </span>
       )}

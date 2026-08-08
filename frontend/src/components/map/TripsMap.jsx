@@ -1,11 +1,30 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState, Fragment } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { geocode } from "../../services/route";
 
-const TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+const TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 const TILE_ATTRIBUTION = "&copy; OpenStreetMap contributors &copy; CARTO";
-const DEFAULT_CENTER = [12.9716, 77.5946]; // Bengaluru, from config/maps.js
+const DEFAULT_CENTER = [12.9716, 77.5946];
+
+// Module-level cache so repeated addresses across trips/renders don't re-hit Nominatim
+const geocodeCache = new Map();
+
+async function geocodeAddress(address) {
+  if (!address) return null;
+  if (geocodeCache.has(address)) return geocodeCache.get(address);
+  try {
+    const matches = await geocode(address); // uses your real GET /route/geocode?q=...
+    const first = matches?.[0];
+    const coords = first && first.lat != null && first.lng != null ? { lat: first.lat, lng: first.lng } : null;
+    geocodeCache.set(address, coords);
+    return coords;
+  } catch {
+    geocodeCache.set(address, null);
+    return null;
+  }
+}
 
 function pinIcon(color) {
   return L.divIcon({
@@ -22,7 +41,7 @@ const destIcon = pinIcon("#ec4899");
 
 function FitToTrips({ points }) {
   const map = useMap();
-  useMemo(() => {
+  useEffect(() => {
     if (points.length === 0) return;
     if (points.length === 1) {
       map.setView(points[0], 13);
@@ -33,56 +52,97 @@ function FitToTrips({ points }) {
   return null;
 }
 
-/**
- * @param trips        array of trip objects with pickupLat/pickupLng/destLat/destLng
- * @param activeTripId  id of trip to visually highlight (e.g. on card hover)
- * @param onSelectTrip  (tripId) => void, called when a marker/popup is clicked
- */
 function TripsMap({ trips = [], activeTripId = null, onSelectTrip = () => {} }) {
-  const plottable = trips.filter(
-    (t) => t.pickupLat != null && t.pickupLng != null && t.destLat != null && t.destLng != null
+  const [resolved, setResolved] = useState([]);
+  const [resolving, setResolving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function resolveTrips() {
+      setResolving(true);
+      const out = [];
+
+      // Sequential, not Promise.all — plays nice with Nominatim's ~1 req/sec usage policy
+      for (const trip of trips) {
+        const pickup =
+          trip.pickupLat != null && trip.pickupLng != null
+            ? { lat: trip.pickupLat, lng: trip.pickupLng }
+            : await geocodeAddress(trip.start_address);
+
+        const dest =
+          trip.destLat != null && trip.destLng != null
+            ? { lat: trip.destLat, lng: trip.destLng }
+            : await geocodeAddress(trip.dest_address);
+
+        if (cancelled) return;
+        if (pickup && dest) out.push({ trip, pickup, dest });
+      }
+
+      if (!cancelled) {
+        setResolved(out);
+        setResolving(false);
+      }
+    }
+
+    if (trips.length > 0) {
+      resolveTrips();
+    } else {
+      setResolved([]);
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [trips]);
+
+  const points = useMemo(
+    () => resolved.flatMap(({ pickup, dest }) => [[pickup.lat, pickup.lng], [dest.lat, dest.lng]]),
+    [resolved]
   );
 
-  const points = plottable.flatMap((t) => [
-    [t.pickupLat, t.pickupLng],
-    [t.destLat, t.destLng],
-  ]);
-
   return (
-    <div className="h-full w-full overflow-hidden rounded-2xl border border-border">
-      <MapContainer center={DEFAULT_CENTER} zoom={12} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
-        <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
-        {plottable.map((trip) => {
-          const key = trip.trip_id || trip.id;
-          const isActive = key === activeTripId;
-          return (
-            <div key={key}>
-              <Marker
-                position={[trip.pickupLat, trip.pickupLng]}
-                icon={pickupIcon}
-                opacity={isActive ? 1 : 0.85}
-                eventHandlers={{ click: () => onSelectTrip(key) }}
-              >
-                <Popup>
-                  <strong>{trip.start_address}</strong>
-                  <br />→ {trip.dest_address}
-                  <br />{trip.driver_name}
-                </Popup>
-              </Marker>
-              <Marker
-                position={[trip.destLat, trip.destLng]}
-                icon={destIcon}
-                opacity={isActive ? 1 : 0.85}
-                eventHandlers={{ click: () => onSelectTrip(key) }}
-              />
-            </div>
-          );
-        })}
-        {points.length > 0 && <FitToTrips points={points} />}
-      </MapContainer>
-      {plottable.length === 0 && trips.length > 0 && (
+    <div className="relative h-full w-full">
+      {resolving && (
+        <div className="absolute top-3 left-1/2 z-[1000] -translate-x-1/2 rounded-full border border-border bg-surface-raised/95 px-3 py-1.5 text-xs font-medium text-text-dim shadow-lg">
+          Locating rides on map…
+        </div>
+      )}
+      <div className="h-full w-full overflow-hidden rounded-2xl border border-border">
+        <MapContainer center={DEFAULT_CENTER} zoom={12} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
+          <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
+          {resolved.map(({ trip, pickup, dest }) => {
+            const key = trip.trip_id || trip.id;
+            const isActive = key === activeTripId;
+            return (
+              <Fragment key={key}>
+                <Marker
+                  position={[pickup.lat, pickup.lng]}
+                  icon={pickupIcon}
+                  opacity={isActive ? 1 : 0.85}
+                  eventHandlers={{ click: () => onSelectTrip(key) }}
+                >
+                  <Popup>
+                    <strong>{trip.start_address}</strong>
+                    <br />→ {trip.dest_address}
+                    <br />{trip.driver_name}
+                  </Popup>
+                </Marker>
+                <Marker
+                  position={[dest.lat, dest.lng]}
+                  icon={destIcon}
+                  opacity={isActive ? 1 : 0.85}
+                  eventHandlers={{ click: () => onSelectTrip(key) }}
+                />
+              </Fragment>
+            );
+          })}
+          {points.length > 0 && <FitToTrips points={points} />}
+        </MapContainer>
+      </div>
+      {!resolving && resolved.length === 0 && trips.length > 0 && (
         <p className="mt-2 px-1 text-xs text-text-faint">
-          None of these rides have location coordinates yet — older rides published before the map feature won't appear here.
+          Couldn't locate any of these rides on the map — their addresses may not be geocodable.
         </p>
       )}
     </div>

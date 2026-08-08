@@ -58,7 +58,7 @@ function FindRide() {
           <Card className="mt-8 p-6 sm:p-8">
             <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
               {error && (
-                <div role="alert" className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                <div role="alert" className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-700">
                   {error}
                 </div>
               )}
@@ -78,7 +78,7 @@ function FindRide() {
               <button
                 type="button"
                 onClick={swapLocations}
-                className="-my-1 flex items-center justify-center self-center text-text-faint transition-colors hover:text-violet-300"
+                className="-my-1 flex items-center justify-center self-center text-text-faint transition-colors hover:text-violet-700"
                 aria-label="Swap pickup and destination"
               >
                 <ArrowLeftRight size={16} />

@@ -128,7 +128,7 @@ function MyVehicle() {
           ))}
         </div>
       ) : loadError ? (
-        <Card className="px-6 py-14 text-center text-sm text-red-300">{loadError}</Card>
+        <Card className="px-6 py-14 text-center text-sm text-red-700">{loadError}</Card>
       ) : vehicles.length === 0 ? (
         <Card className="flex flex-col items-center gap-4 px-6 py-16 text-center">
           <Car size={30} className="text-text-faint" />
@@ -149,7 +149,7 @@ function MyVehicle() {
             <Card key={v._id} className="flex flex-col gap-4 p-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/15 text-violet-700">
                     <Car size={20} />
                   </div>
                   <div>
@@ -165,7 +165,7 @@ function MyVehicle() {
               </div>
 
               <div className="flex items-center gap-1.5 text-sm text-text-dim">
-                <Users size={15} className="text-violet-400" />
+                <Users size={15} className="text-violet-600" />
                 {v.seatingCapacity} seats
               </div>
 
@@ -187,7 +187,7 @@ function MyVehicle() {
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editingId ? "Edit vehicle" : "Add vehicle"}>
         <form onSubmit={handleSave} noValidate className="flex flex-col gap-4">
           {formError && (
-            <div role="alert" className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            <div role="alert" className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-700">
               {formError}
             </div>
           )}

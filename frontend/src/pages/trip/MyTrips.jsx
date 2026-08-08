@@ -81,14 +81,14 @@ function MyTrips() {
           ))}
         </div>
       ) : loadError ? (
-        <Card className="px-6 py-14 text-center text-sm text-red-300">{loadError}</Card>
+        <Card className="px-6 py-14 text-center text-sm text-red-700">{loadError}</Card>
       ) : visible.length === 0 ? (
         <Card className="flex flex-col items-center gap-3 px-6 py-16 text-center">
           <RouteIcon size={28} className="text-text-faint" />
           <p className="text-sm text-text-dim">
             {tab === "mine" ? "You haven't published any trips yet." : "No trips have been published yet."}
           </p>
-          <Link to="/rides/offer" className="text-sm font-semibold text-violet-400 hover:text-violet-300">
+          <Link to="/rides/offer" className="text-sm font-semibold text-violet-600 hover:text-violet-700">
             Offer a ride
           </Link>
         </Card>
@@ -102,7 +102,7 @@ function MyTrips() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="flex items-center gap-1.5 text-sm font-semibold">
-                      <MapPin size={13} className="text-violet-400" />
+                      <MapPin size={13} className="text-violet-600" />
                       {trip.start_address}
                       <ArrowRight size={13} className="text-text-faint" />
                       {trip.dest_address}

@@ -1,9 +1,9 @@
 const TONES = {
-  neutral: "bg-white/8 text-text-dim",
-  success: "bg-emerald-400/12 text-emerald-300",
-  warning: "bg-amber-400/12 text-amber-300",
-  danger: "bg-red-400/12 text-red-300",
-  violet: "bg-violet-400/15 text-violet-300",
+  neutral: "bg-black/5 text-text-dim",
+  success: "bg-emerald-500/12 text-emerald-700",
+  warning: "bg-amber-500/12 text-amber-700",
+  danger: "bg-red-500/12 text-red-700",
+  violet: "bg-violet-500/12 text-violet-700",
 };
 
 function Badge({ tone = "neutral", children, className = "" }) {

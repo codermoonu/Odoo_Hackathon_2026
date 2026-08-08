@@ -21,7 +21,7 @@ function LocationAutocomplete({ label, placeholder, defaultValue = "", onSelect,
   return (
     <div className="relative flex flex-col gap-1.5" ref={wrapperRef}>
       <label className="text-sm font-medium text-text-dim">
-        {label} {required && <span className="text-violet-400">*</span>}
+        {label} {required && <span className="text-violet-600">*</span>}
       </label>
       <div className="relative">
         <MapPin size={18} className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-text-faint" />
@@ -51,9 +51,9 @@ function LocationAutocomplete({ label, placeholder, defaultValue = "", onSelect,
                   setOpen(false);
                   onSelect(r);
                 }}
-                className="flex w-full cursor-pointer items-start gap-2 px-4 py-2.5 text-left text-sm text-text-dim hover:bg-white/5 hover:text-text"
+                className="flex w-full cursor-pointer items-start gap-2 px-4 py-2.5 text-left text-sm text-text-dim hover:bg-black/5 hover:text-text"
               >
-                <MapPin size={14} className="mt-0.5 shrink-0 text-violet-400" />
+                <MapPin size={14} className="mt-0.5 shrink-0 text-violet-600" />
                 <span className="line-clamp-2">{r.address}</span>
               </button>
             </li>

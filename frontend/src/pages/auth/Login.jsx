@@ -56,9 +56,9 @@ function Login() {
   return (
     <div className="grid min-h-dvh w-full grid-cols-1 bg-bg text-text lg:grid-cols-2">
       {/* Visual panel */}
-      <div className="relative hidden overflow-hidden bg-gradient-to-br from-violet-700 via-violet-800 to-indigo-900 lg:flex lg:flex-col lg:justify-between lg:p-12">
+      <div className="relative hidden overflow-hidden bg-gradient-to-br from-violet-700 via-violet-800 to-purple-900 lg:flex lg:flex-col lg:justify-between lg:p-12">
         <div aria-hidden="true" className="absolute top-[-8rem] right-[-8rem] h-96 w-96 rounded-full bg-purple-400/25 blur-[120px]" />
-        <div aria-hidden="true" className="absolute bottom-[-6rem] left-[-4rem] h-80 w-80 rounded-full bg-indigo-400/20 blur-[110px]" />
+        <div aria-hidden="true" className="absolute bottom-[-6rem] left-[-4rem] h-80 w-80 rounded-full bg-violet-400/20 blur-[110px]" />
 
         <Link to="/landing" className="relative z-10 flex items-center gap-2.5 text-white">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 backdrop-blur">
@@ -91,14 +91,14 @@ function Login() {
           <h1 className="font-display text-2xl font-bold">Log in</h1>
           <p className="mt-1.5 text-sm text-text-dim">
             New here?{" "}
-            <Link to="/signup" className="font-semibold text-violet-400 hover:text-violet-300">
+            <Link to="/signup" className="font-semibold text-violet-600 hover:text-violet-700">
               Create an account
             </Link>
           </p>
 
           <form onSubmit={handleSubmit} noValidate className="mt-8 flex flex-col gap-5">
             {submitError && (
-              <div role="alert" className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              <div role="alert" className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-700">
                 {submitError}
               </div>
             )}

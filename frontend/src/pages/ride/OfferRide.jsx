@@ -112,7 +112,7 @@ function OfferRide() {
       <AppShell title="Offer a Ride">
         <div className="mx-auto max-w-lg">
           <Card className="flex flex-col items-center gap-4 p-8 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-300">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-700">
               <CheckCircle2 size={28} />
             </div>
             <h2 className="font-display text-xl font-bold">Ride published!</h2>
@@ -150,14 +150,14 @@ function OfferRide() {
         ) : (
           <Card className="p-6 sm:p-8">
             <div className="mb-6 text-center">
-              <Navigation className="mx-auto text-violet-400" size={26} />
+              <Navigation className="mx-auto text-violet-600" size={26} />
               <h2 className="mt-3 font-display text-xl font-bold">Publish your route</h2>
               <p className="mt-1.5 text-sm text-text-dim">Set your route once, riders find you.</p>
             </div>
 
             <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
               {submitError && (
-                <div role="alert" className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                <div role="alert" className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-700">
                   {submitError}
                 </div>
               )}
@@ -195,18 +195,18 @@ function OfferRide() {
                 </div>
               )}
               {routeError && (
-                <div role="alert" className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                <div role="alert" className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-700">
                   {routeError}
                 </div>
               )}
               {route && !routeLoading && (
                 <div className="grid grid-cols-2 gap-3 rounded-xl border border-violet-400/20 bg-violet-500/5 px-4 py-3.5 text-sm">
                   <span className="flex items-center gap-2 text-text-dim">
-                    <RouteIcon size={15} className="text-violet-400" />
+                    <RouteIcon size={15} className="text-violet-600" />
                     {route.distance_km} km
                   </span>
                   <span className="flex items-center gap-2 text-text-dim">
-                    <Clock size={15} className="text-violet-400" />
+                    <Clock size={15} className="text-violet-600" />
                     {route.duration_mins} min
                   </span>
                 </div>
