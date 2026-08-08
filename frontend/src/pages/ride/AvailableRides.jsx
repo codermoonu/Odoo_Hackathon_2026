@@ -8,6 +8,7 @@ import Button from "../../components/ui/Button";
 import TripsMap from "../../components/map/TripsMap";
 import { getAllTrips } from "../../services/trip";
 import { formatCurrency, formatDateTime } from "../../utils/formatDate";
+import { getAvailableSeats, getSeatStatusLabel } from "../../utils/seat";
 
 const STATUS_TONE = {
   PUBLISHED: "success",
@@ -136,7 +137,7 @@ function AvailableRides() {
           {filtered.map((trip) => {
             const key = trip.trip_id || trip.id;
             const isRequested = !!requested[key];
-            const seats = Math.max((trip.available_seats || 0) - (isRequested ? 1 : 0), 0);
+            const seats = getAvailableSeats(trip, isRequested ? 1 : 0);
             return (
               <Card
                 key={key}
@@ -170,7 +171,7 @@ function AvailableRides() {
                   <div className="flex items-center gap-4 text-sm text-text-dim">
                     <span className="flex items-center gap-1.5">
                       <Users size={15} className="text-violet-600" />
-                      {seats} seats left
+                      {getSeatStatusLabel(trip, isRequested ? 1 : 0)}
                     </span>
                     {trip.distance_km != null && (
                       <span className="flex items-center gap-1.5">
