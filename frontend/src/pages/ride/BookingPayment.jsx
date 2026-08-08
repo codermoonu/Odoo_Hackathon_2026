@@ -85,6 +85,16 @@ function BookingPayment() {
     };
   }, [bookingId]);
 
+  // Payment just confirms an already-locked seat — go straight to tracking
+  // rather than making the rider tap through another screen.
+  useEffect(() => {
+    if (!paid || !booking) return;
+    const redirect = setTimeout(() => {
+      navigate(`/bookings/${booking._id}/live`);
+    }, 1400);
+    return () => clearTimeout(redirect);
+  }, [paid, booking, navigate]);
+
   async function handlePay() {
     if (!booking) return;
     setPayError("");
@@ -191,9 +201,10 @@ function BookingPayment() {
               You've paid {formatCurrency(booking.totalFare)} for {seatLabel} from {ride.pickupLocation} to{" "}
               {ride.destination}.
             </p>
+            <p className="mt-1.5 text-xs text-text-faint">Taking you to live tracking…</p>
           </div>
-          <Button className="mt-2 w-full justify-center" onClick={() => navigate("/rides/available")}>
-            Back to rides
+          <Button className="mt-2 w-full justify-center" onClick={() => navigate(`/bookings/${booking._id}/live`)}>
+            Track my ride
           </Button>
         </Card>
       </AppShell>

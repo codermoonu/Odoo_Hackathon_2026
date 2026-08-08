@@ -12,6 +12,7 @@ import FindRide from "../pages/ride/FindRide";
 import OfferRide from "../pages/ride/OfferRide";
 import AvailableRides from "../pages/ride/AvailableRides";
 import BookingPayment from "../pages/ride/BookingPayment";
+import RideTracking from "../pages/ride/RideTracking";
 import MyVehicle from "../pages/ride/MyVehicle";
 import MyTrips from "../pages/trip/MyTrips";
 import Wallet from "../pages/payment/Wallet";
@@ -194,6 +195,15 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <LiveTracking />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/bookings/:id/live"
+        element={
+          <ProtectedRoute>
+            <RideTracking />
           </ProtectedRoute>
         }
       />
