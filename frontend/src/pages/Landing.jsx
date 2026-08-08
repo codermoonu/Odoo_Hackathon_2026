@@ -1,5 +1,5 @@
 
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Car,
   MapPin,
@@ -12,8 +12,9 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { assets } from "../assets/assets";
+import { useAuth } from "../hooks/useAuth";
 
 const FEATURES = [
   {
@@ -67,6 +68,16 @@ const TESTIMONIALS = [
 
 function Landing() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  if (isAuthenticated) return null;
 
   return (
     <div>

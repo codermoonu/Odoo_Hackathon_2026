@@ -5,6 +5,7 @@ import AppShell from "../../components/ui/AppShell";
 import Card from "../../components/ui/Card";
 import Badge from "../../components/ui/Badge";
 import { useAuth } from "../../hooks/useAuth";
+import { assets } from "../../assets/assets";
 import { getVehicles } from "../../services/vehicle";
 import { getMyPayments } from "../../services/payment";
 import { getAllTrips } from "../../services/trip";
@@ -62,13 +63,34 @@ function Dashboard() {
 
   return (
     <AppShell title="Dashboard">
-      <div className="animate-fade-up">
-        <h2 className="font-display text-xl font-bold sm:text-2xl">Hey {firstName}, ready to ride?</h2>
-        <p className="mt-1 text-sm text-text-dim">Here's what's happening with your commute.</p>
+      <div className="animate-fade-up relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-700 via-violet-600 to-purple-600 p-6 text-white shadow-[0_20px_45px_rgba(124,58,237,0.25)] sm:p-8">
+        <div aria-hidden="true" className="absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10 blur-3xl" />
+        <div aria-hidden="true" className="absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-purple-300/20 blur-3xl" />
+
+        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <img
+              src={user?.image || assets.user_profile}
+              alt=""
+              className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-white/40"
+            />
+            <div>
+              <h2 className="font-display text-xl font-bold sm:text-2xl">Hey {firstName}, ready??</h2>
+              <p className="mt-1 text-sm text-violet-100/80">Here's what's happening with your commute.</p>
+            </div>
+          </div>
+         <Link
+  to="/rides/find"
+  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-black transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+>
+  <MapPin size={16} />
+  Find a ride
+</Link>
+        </div>
       </div>
 
       <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card className="p-5">
+        <Card className="p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-400/30">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/15 text-violet-700">
               <Car size={19} />
@@ -77,7 +99,7 @@ function Dashboard() {
           </div>
           <p className="mt-4 font-display text-3xl font-bold">{loading ? "—" : vehicles.length}</p>
         </Card>
-        <Card className="p-5">
+        <Card className="p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-400/30">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700">
               <Wallet size={19} />
@@ -86,7 +108,7 @@ function Dashboard() {
           </div>
           <p className="mt-4 font-display text-3xl font-bold">{loading ? "—" : formatCurrency(balance)}</p>
         </Card>
-        <Card className="p-5">
+        <Card className="p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-400/30">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/15 text-violet-700">
               <RouteIcon size={19} />
@@ -138,14 +160,22 @@ function Dashboard() {
           ) : (
             <ul className="divide-y divide-border">
               {recentTrips.map((trip) => (
-                <li key={trip.trip_id || trip.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">
-                      {trip.start_address || "Pickup"} <ArrowRight size={12} className="mx-1 inline text-text-faint" /> {trip.dest_address || "Destination"}
-                    </p>
-                    <p className="mt-1 text-xs text-text-faint">
-                      {trip.driver_name} · {formatDateTime(trip.createdAt)}
-                    </p>
+                <li
+                  key={trip.trip_id || trip.id}
+                  className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 transition-colors duration-150 hover:bg-black/[0.02]"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/12 text-violet-700">
+                      <RouteIcon size={16} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold">
+                        {trip.start_address || "Pickup"} <ArrowRight size={12} className="mx-1 inline text-text-faint" /> {trip.dest_address || "Destination"}
+                      </p>
+                      <p className="mt-1 text-xs text-text-faint">
+                        {trip.driver_name} · {formatDateTime(trip.createdAt)}
+                      </p>
+                    </div>
                   </div>
                   <Badge tone={STATUS_TONE[trip.status] || "neutral"}>{trip.status}</Badge>
                 </li>

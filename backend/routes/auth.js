@@ -5,6 +5,8 @@ const {
   registerUser,
   loginUser,
   updateProfileImage,
+  updateProfile,
+  updatePassword,
 } = require("../controllers/userController");
 
 const upload = require("../middlewares/uploadMiddleware");
@@ -27,6 +29,10 @@ router.put(
   upload.single("image"),
   updateProfileImage
 );
+
+router.put("/profile", protect, updateProfile);
+
+router.put("/password", protect, updatePassword);
 
 
 module.exports = router;
