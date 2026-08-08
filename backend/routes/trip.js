@@ -5,10 +5,11 @@
 const express = require('express');
 const router = express.Router();
 const tripController = require('../controllers/tripController');
+const protect = require('../middlewares/userMiddleware');
 
-router.post('/', tripController.createTrip);
+router.post('/', protect, tripController.createTrip);
 router.get('/', tripController.getAllTrips);
 router.get('/:id', tripController.getTripById);
-router.post('/:id/status', tripController.updateTripStatus);
+router.post('/:id/status', protect, tripController.updateTripStatus);
 
 module.exports = router;

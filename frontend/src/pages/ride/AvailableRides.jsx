@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
-import { MapPin, ArrowRight, Users, Fuel, CheckCircle2, SearchX, List, Map as MapIcon } from "lucide-react";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import { MapPin, ArrowRight, Users, Fuel, SearchX, List, Map as MapIcon, CreditCard } from "lucide-react";
 import AppShell from "../../components/ui/AppShell";
 import Card from "../../components/ui/Card";
 import Badge from "../../components/ui/Badge";
@@ -9,7 +9,7 @@ import TripsMap from "../../components/map/TripsMap";
 import { getAllTrips } from "../../services/trip";
 import { formatCurrency, formatDateTime } from "../../utils/formatDate";
 import { getAvailableSeats, getSeatStatusLabel } from "../../utils/seat";
-
+import { useCurrentLocation } from "../../hooks/useCurrentLocation";
 const STATUS_TONE = {
   PUBLISHED: "success",
   STARTED: "violet",
@@ -17,22 +17,31 @@ const STATUS_TONE = {
   CANCELLED: "danger",
 };
 
+// Geocoded addresses vary in how much admin hierarchy they include
+// ("Jadavpur, Kolkata, West Bengal, India" vs "Jadavpur, Kolkata,
+// Kolkata Metropolitan Area, Kolkata, West Bengal, India" for the same
+// place), so a plain substring check in either direction is too brittle.
+// Match on the query's first (most specific) segment instead — that's
+// the actual place name the rider searched for.
 function matches(text, query) {
   if (!query) return true;
-  return (text || "").toLowerCase().includes(query.toLowerCase());
+  const primaryTerm = query.split(",")[0].trim().toLowerCase();
+  if (!primaryTerm) return true;
+  return (text || "").toLowerCase().includes(primaryTerm);
 }
 
 function AvailableRides() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const pickup = searchParams.get("pickup") || "";
   const destination = searchParams.get("destination") || "";
 
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [requested, setRequested] = useState({});
   const [view, setView] = useState("list"); // "list" | "map"
   const [hoveredTripId, setHoveredTripId] = useState(null);
+  const { status, error, requestLocation } = useCurrentLocation();
 
   useEffect(() => {
     let active = true;
@@ -60,7 +69,7 @@ function AvailableRides() {
   );
 
   function handleRequestSeat(tripKey) {
-    setRequested((r) => ({ ...r, [tripKey]: true }));
+    navigate(`/trips/${tripKey}/pay`);
   }
 
   return (
@@ -86,6 +95,17 @@ function AvailableRides() {
             </Link>
           </p>
         )}
+        {/* NEW: location-permission prompt for "rides near me" */}
+        {status !== "granted" && (
+          <button
+            type="button"
+            onClick={requestLocation}
+            disabled={status === "requesting"}
+            className="text-sm font-semibold text-violet-600 hover:text-violet-700 disabled:opacity-60"
+          >
+            {status === "requesting" ? "Locating…" : "Use my location to find rides nearby"}
+          </button>
+        )}
 
         <div className="flex items-center gap-1 rounded-xl border border-border bg-surface-alt/60 p-1">
           <button
@@ -108,7 +128,8 @@ function AvailableRides() {
           </button>
         </div>
       </div>
-
+       {/* NEW: error message, own line below the header row */}
+      {error && <p className="mb-4 text-xs text-red-500">{error}</p>}
       {loading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {[0, 1, 2, 3].map((i) => (
@@ -136,8 +157,7 @@ function AvailableRides() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {filtered.map((trip) => {
             const key = trip.trip_id || trip.id;
-            const isRequested = !!requested[key];
-            const seats = getAvailableSeats(trip, isRequested ? 1 : 0);
+            const seats = getAvailableSeats(trip, 0);
             return (
               <Card
                 key={key}
@@ -171,7 +191,7 @@ function AvailableRides() {
                   <div className="flex items-center gap-4 text-sm text-text-dim">
                     <span className="flex items-center gap-1.5">
                       <Users size={15} className="text-violet-600" />
-                      {getSeatStatusLabel(trip, isRequested ? 1 : 0)}
+                      {getSeatStatusLabel(trip, 0)}
                     </span>
                     {trip.distance_km != null && (
                       <span className="flex items-center gap-1.5">
@@ -185,21 +205,15 @@ function AvailableRides() {
                   </p>
                 </div>
 
-                {isRequested ? (
-                  <div className="flex items-center justify-center gap-2 rounded-xl bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-700">
-                    <CheckCircle2 size={16} />
-                    Seat requested
-                  </div>
-                ) : (
-                  <Button
-                    variant="secondary"
-                    className="w-full justify-center"
-                    disabled={seats === 0}
-                    onClick={() => handleRequestSeat(key)}
-                  >
-                    {seats === 0 ? "Full" : "Request seat"}
-                  </Button>
-                )}
+                <Button
+                  variant="secondary"
+                  className="w-full justify-center"
+                  disabled={seats === 0}
+                  onClick={() => handleRequestSeat(key)}
+                >
+                  <CreditCard size={16} />
+                  {seats === 0 ? "Full" : "Request seat & pay"}
+                </Button>
               </Card>
             );
           })}

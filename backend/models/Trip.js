@@ -6,12 +6,18 @@ const coordSchema = new mongoose.Schema({
 }, { _id: false });
 
 const tripSchema = new mongoose.Schema({
-  trip_id: { 
-    type: String, 
-    required: true, 
-    unique: true 
+  trip_id: {
+    type: String,
+    required: true,
+    unique: true
   },
-  driver_name: { 
+  // The authenticated user who published this trip — used to power "My Trips".
+  // Optional so older trips created before this field existed still load fine.
+  driver: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+  driver_name: {
     type: String, 
     required: true 
   },

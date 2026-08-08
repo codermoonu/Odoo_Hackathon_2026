@@ -3,7 +3,7 @@
  * Enterprise Carpool Platform - Hackathon 2026
  */
 const trackingService = require('../services/tracking');
-
+const Trip = require('../models/Trip');
 /**
  * Handle tracking sockets for both Native WebSockets and Socket.io setups
  * @param {Object} socket - Socket connection instance
@@ -24,8 +24,24 @@ function handleTrackingSockets(socket, io) {
 
       console.log(`[TrackingSocket] Client (${socket.role}) joined room: ${roomName}`);
 
-      // Fetch latest trip tracking state
-      const currentTripState = trackingService.getTripState(trip_id);
+     
+      // In-memory state first (fast path — already live from a prior
+      // driver_location_update this server session).
+      let currentTripState = trackingService.getTripState(trip_id);
+
+      // Nothing in memory yet (fresh server, or seeded trip that hasn't
+      // had a live update posted) — fall back to the DB record so
+      // seeded IN_PROGRESS trips still show up immediately on join.
+      if (!currentTripState) {
+        const tripDoc = await Trip.findOne({ trip_id }).lean();
+        if (tripDoc) {
+          currentTripState = trackingService.getTripState(trip_id, {
+            status: tripDoc.status,
+            start_coords: tripDoc.current_location || tripDoc.start_coords,
+          });
+        }
+      }
+
       const payload = {
         event: 'trip_state',
         trip_id,
@@ -41,6 +57,7 @@ function handleTrackingSockets(socket, io) {
       console.error('[TrackingSocket] Error joining trip room:', err.message);
     }
   });
+
 
   // Handle Driver Live Location Update
   socket.on('driver_location_update', async (data) => {

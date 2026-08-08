@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, Fragment } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { geocode } from "../../services/route";
+import { geocode, previewRoute } from "../../services/route";
 
 const TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 const TILE_ATTRIBUTION = "&copy; OpenStreetMap contributors &copy; CARTO";
@@ -39,6 +39,28 @@ function pinIcon(color) {
 const pickupIcon = pinIcon("#8b5cf6");
 const destIcon = pinIcon("#ec4899");
 
+// Module-level cache so re-renders/other trips sharing a pickup-dest pair don't re-hit OSRM
+const routeCache = new Map();
+
+async function fetchRouteLine(pickup, dest) {
+  const key = `${pickup.lat},${pickup.lng}-${dest.lat},${dest.lng}`;
+  if (routeCache.has(key)) return routeCache.get(key);
+  try {
+    const route = await previewRoute({
+      origin_lat: pickup.lat,
+      origin_lng: pickup.lng,
+      dest_lat: dest.lat,
+      dest_lng: dest.lng,
+    });
+    const positions = route?.geometry?.coordinates?.map(([lng, lat]) => [lat, lng]) || null;
+    routeCache.set(key, positions);
+    return positions;
+  } catch {
+    routeCache.set(key, null);
+    return null;
+  }
+}
+
 function FitToTrips({ points }) {
   const map = useMap();
   useEffect(() => {
@@ -55,6 +77,7 @@ function FitToTrips({ points }) {
 function TripsMap({ trips = [], activeTripId = null, onSelectTrip = () => {} }) {
   const [resolved, setResolved] = useState([]);
   const [resolving, setResolving] = useState(false);
+  const [routeLines, setRouteLines] = useState({});
 
   useEffect(() => {
     let cancelled = false;
@@ -85,11 +108,7 @@ function TripsMap({ trips = [], activeTripId = null, onSelectTrip = () => {} }) 
       }
     }
 
-    if (trips.length > 0) {
-      resolveTrips();
-    } else {
-      setResolved([]);
-    }
+    resolveTrips();
 
     return () => {
       cancelled = true;
@@ -101,6 +120,28 @@ function TripsMap({ trips = [], activeTripId = null, onSelectTrip = () => {} }) 
     [resolved]
   );
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadRouteLines() {
+      const entries = {};
+      // Sequential, mirrors the geocoding loop above — gentle on the public OSRM instance
+      for (const { trip, pickup, dest } of resolved) {
+        const key = trip.trip_id || trip.id;
+        const positions = await fetchRouteLine(pickup, dest);
+        if (cancelled) return;
+        if (positions) entries[key] = positions;
+      }
+      if (!cancelled) setRouteLines(entries);
+    }
+
+    loadRouteLines();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [resolved]);
+
   return (
     <div className="relative h-full w-full">
       {resolving && (
@@ -111,6 +152,24 @@ function TripsMap({ trips = [], activeTripId = null, onSelectTrip = () => {} }) 
       <div className="h-full w-full overflow-hidden rounded-2xl border border-border">
         <MapContainer center={DEFAULT_CENTER} zoom={12} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
           <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
+          {resolved.map(({ trip }) => {
+            const key = trip.trip_id || trip.id;
+            const positions = routeLines[key];
+            if (!positions) return null;
+            const isActive = key === activeTripId;
+            return (
+              <Polyline
+                key={`route-${key}`}
+                positions={positions}
+                pathOptions={{
+                  color: "#a855f7",
+                  weight: isActive ? 5 : 3,
+                  opacity: isActive ? 0.9 : 0.55,
+                }}
+                eventHandlers={{ click: () => onSelectTrip(key) }}
+              />
+            );
+          })}
           {resolved.map(({ trip, pickup, dest }) => {
             const key = trip.trip_id || trip.id;
             const isActive = key === activeTripId;
