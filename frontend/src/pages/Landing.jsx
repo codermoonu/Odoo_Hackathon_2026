@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import {
   Car,
@@ -79,96 +80,100 @@ function Landing() {
         <div className="hero-glow hero-glow-one" />
         <div className="hero-glow hero-glow-two" />
 
-
         {/* =========================
             NAVBAR
         ========================= */}
 
         <nav className="landing-nav">
-        <div className="landing-nav-inner">
+          <div className="landing-nav-inner">
 
-          <Link to="/" className="brand-link">
+            <Link to="/" className="brand-link">
 
-            <span className="brand-logo-box">
+              <span className="brand-logo-box">
 
-              <img
-                src={assets.logo}
-                alt="Wayflow"
-                className="brand-logo"
-              />
+                <img
+                  src={assets.logo}
+                  alt="Wayflow"
+                  className="brand-logo"
+                />
 
-            </span>
+              </span>
 
-            <span className="brand-name">
-              WAYFLOW
-            </span>
+              <span className="brand-name font-display font-extrabold tracking-[0.12em]">
+                WAYFLOW
+              </span>
 
-          </Link>
-
-
-          {/* DESKTOP NAVIGATION */}
-
-          <div className="desktop-navigation">
-
-            <a href="#features">
-              Features
-            </a>
-
-            <a href="#how-it-works">
-              How it works
-            </a>
-
-            <a href="#testimonials">
-              Stories
-            </a>
-
-          </div>
-
-
-          {/* DESKTOP ACTIONS */}
-
-          <div className="desktop-actions">
-
-            <Link
-              to="/login"
-              className="login-link"
-            >
-              Log in
             </Link>
 
-            <Link
-              to="/signup"
-              className="signup-button"
+            {/* DESKTOP NAVIGATION */}
+
+            <div className="desktop-navigation">
+
+              <a
+                href="#features"
+                className="font-medium tracking-tight transition-all duration-200"
+              >
+                Features
+              </a>
+
+              <a
+                href="#how-it-works"
+                className="font-medium tracking-tight transition-all duration-200"
+              >
+                How it works
+              </a>
+
+              <a
+                href="#testimonials"
+                className="font-medium tracking-tight transition-all duration-200"
+              >
+                Stories
+              </a>
+
+            </div>
+
+            {/* DESKTOP ACTIONS */}
+
+            <div className="desktop-actions">
+
+              <Link
+                to="/login"
+                className="login-link font-semibold tracking-tight transition-all duration-200"
+              >
+                Log in
+              </Link>
+
+              <Link
+                to="/signup"
+                className="signup-button font-semibold tracking-tight"
+              >
+                Sign up free
+              </Link>
+
+            </div>
+
+            {/* MOBILE MENU BUTTON */}
+
+            <button
+              className="mobile-menu-button"
+              onClick={() => setMenuOpen((value) => !value)}
+              aria-label={
+                menuOpen
+                  ? "Close menu"
+                  : "Open menu"
+              }
             >
-              Sign up free
-            </Link>
+
+              {menuOpen ? (
+                <X size={24} />
+              ) : (
+                <Menu size={24} />
+              )}
+
+            </button>
 
           </div>
-
-
-          {/* MOBILE MENU BUTTON */}
-
-          <button
-            className="mobile-menu-button"
-            onClick={() => setMenuOpen((value) => !value)}
-            aria-label={
-              menuOpen
-                ? "Close menu"
-                : "Open menu"
-            }
-          >
-
-            {menuOpen ? (
-              <X size={24} />
-            ) : (
-              <Menu size={24} />
-            )}
-
-          </button>
-
-        </div>
         </nav>
-
 
         {/* =========================
             MOBILE MENU
@@ -181,6 +186,7 @@ function Landing() {
             <a
               href="#features"
               onClick={() => setMenuOpen(false)}
+              className="font-medium"
             >
               Features
             </a>
@@ -188,6 +194,7 @@ function Landing() {
             <a
               href="#how-it-works"
               onClick={() => setMenuOpen(false)}
+              className="font-medium"
             >
               How it works
             </a>
@@ -195,6 +202,7 @@ function Landing() {
             <a
               href="#testimonials"
               onClick={() => setMenuOpen(false)}
+              className="font-medium"
             >
               Stories
             </a>
@@ -202,13 +210,14 @@ function Landing() {
             <Link
               to="/login"
               onClick={() => setMenuOpen(false)}
+              className="font-semibold"
             >
               Log in
             </Link>
 
             <Link
               to="/signup"
-              className="mobile-signup"
+              className="mobile-signup font-semibold"
               onClick={() => setMenuOpen(false)}
             >
               Sign up free
@@ -218,47 +227,38 @@ function Landing() {
 
         )}
 
-
         {/* =========================
             HERO CONTENT
         ========================= */}
 
         <div className="hero-content">
 
-
-          {/* =========================
-              LEFT SIDE
-          ========================= */}
+          {/* LEFT SIDE */}
 
           <div className="hero-copy">
 
-            <span className="hero-eyebrow">
+            <span className="hero-eyebrow font-bold tracking-[0.18em]">
               SMARTER COMMUTES. BETTER TOGETHER.
             </span>
 
-
-            <h1>
+            <h1 className="font-display font-extrabold tracking-[-0.045em] leading-[1.02]">
 
               Your daily commute,
 
               <br />
 
-              <span>
+              <span className="font-display">
                 shared &amp; simplified.
               </span>
 
             </h1>
 
-
-            <p className="hero-description">
-
+            <p className="hero-description text-[16px] sm:text-[17px] lg:text-[18px] leading-7 lg:leading-8 tracking-[-0.01em]">
               Find coworkers travelling your way,
               share rides, save money and make your
               daily commute more sustainable —
               without slowing down.
-
             </p>
-
 
             {/* CTA BUTTONS */}
 
@@ -266,7 +266,7 @@ function Landing() {
 
               <Link
                 to="/signup"
-                className="primary-cta"
+                className="primary-cta font-bold tracking-[-0.01em]"
               >
 
                 <MapPin size={19} />
@@ -280,10 +280,9 @@ function Landing() {
 
               </Link>
 
-
               <Link
                 to="/signup"
-                className="secondary-cta"
+                className="secondary-cta font-bold tracking-[-0.01em]"
               >
 
                 <Car size={19} />
@@ -294,12 +293,11 @@ function Landing() {
 
             </div>
 
-
             {/* TRUST */}
 
             <div className="hero-trust">
 
-              <span>
+              <span className="font-medium tracking-[-0.01em]">
 
                 <ShieldCheck size={18} />
 
@@ -307,8 +305,7 @@ function Landing() {
 
               </span>
 
-
-              <span>
+              <span className="font-medium tracking-[-0.01em]">
 
                 <Wallet size={18} />
 
@@ -320,41 +317,25 @@ function Landing() {
 
           </div>
 
-
-          {/* =================================================
-              CAR
-          ================================================= */}
+          {/* CAR */}
 
           <div
             className="hero-car-area"
             aria-hidden="true"
           >
 
-            {/* Purple glow */}
-
             <div className="car-light" />
-
-
-            {/* Moving road */}
 
             <div className="hero-road">
 
               <div className="road-line road-line-1" />
-
               <div className="road-line road-line-2" />
-
               <div className="road-line road-line-3" />
-
               <div className="road-line road-line-4" />
-
               <div className="road-line road-line-5" />
-
               <div className="road-line road-line-6" />
 
             </div>
-
-
-            {/* CAR */}
 
             <div className="car-wrapper">
 
@@ -372,7 +353,6 @@ function Landing() {
 
       </section>
 
-
       {/* =====================================================
           FEATURES
       ===================================================== */}
@@ -386,23 +366,22 @@ function Landing() {
 
           <div className="section-heading">
 
-            <span>
-              WHY WAYFLOW
+            <span className="block mb-3 text-[11px] sm:text-xs font-bold tracking-[0.2em] uppercase text-[#806cb0]">
+              BUILT FOR EVERYDAY TRAVEL
             </span>
 
-            <h2>
+            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-[-0.04em] leading-[1.08] text-[#2b2340]">
               Built for the daily commute.
             </h2>
 
-            <p>
+            <p className="mt-4 max-w-2xl text-base md:text-lg leading-7 md:leading-8 tracking-[-0.01em] text-[#716980]">
               Everything your team needs to turn solo
               drives into convenient shared rides.
             </p>
 
           </div>
 
-
-          <div className="features-grid">
+          <div className="rounded-full features-grid">
 
             {FEATURES.map(
               ({ icon: Icon, title, text }) => (
@@ -418,13 +397,11 @@ function Landing() {
 
                   </div>
 
-
-                  <h3>
+                  <h3 className="font-display text-lg md:text-xl font-bold tracking-[-0.02em] leading-tight text-[#2b2340]">
                     {title}
                   </h3>
 
-
-                  <p>
+                  <p className="mt-2 text-sm md:text-[15px] leading-7 text-[#716980]">
                     {text}
                   </p>
 
@@ -439,7 +416,6 @@ function Landing() {
 
       </section>
 
-
       {/* =====================================================
           HOW IT WORKS
       ===================================================== */}
@@ -453,57 +429,79 @@ function Landing() {
 
           <div className="section-heading">
 
-            <span>
+            <span className="block mb-3 text-[11px] sm:text-xs font-bold tracking-[0.2em] uppercase text-[#806cb0]">
               SIMPLE BY DESIGN
             </span>
 
-            <h2>
+            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-[-0.04em] leading-[1.08] text-[#2b2340]">
               How it works
             </h2>
 
-          </div>
+            <p className="mt-4 max-w-2xl text-base md:text-lg leading-7 md:leading-8 text-[#716980]">
+              Three simple steps to make your everyday
+              commute easier.
+            </p>
 
+          </div>
 
           <div className="steps-grid">
 
-            {STEPS.map(
-              (step, index) => (
+            {STEPS.map((step, index) => (
 
-                <div
-                  key={step.title}
-                  className="step-card"
-                >
+              <div
+                key={step.title}
+                className="step-card"
+              >
 
-                  <div className="step-number">
+                <div className="step-number-row">
 
-                    {String(index + 1).padStart(
-                      2,
-                      "0"
-                    )}
-
+                  <div className="step-number font-display font-extrabold tracking-[-0.05em]">
+                    {String(index + 1).padStart(2, "0")}
                   </div>
 
+                  {index < STEPS.length - 1 && (
+                    <div className="step-connector">
+                      <span />
+                    </div>
+                  )}
 
-                  <h3>
+                </div>
+
+                <div className="step-content">
+
+                  <span className="step-label font-bold tracking-[0.16em]">
+                    STEP {String(index + 1).padStart(2, "0")}
+                  </span>
+
+                  <h3 className="font-display text-lg md:text-xl font-bold tracking-[-0.02em] leading-tight text-[#2b2340]">
                     {step.title}
                   </h3>
 
-
-                  <p>
+                  <p className="mt-2 text-sm md:text-[15px] leading-7 text-[#716980]">
                     {step.text}
                   </p>
 
                 </div>
 
-              )
-            )}
+                <div className="step-route">
+
+                  <span className="route-dot" />
+
+                  <span className="route-line" />
+
+                  <span className="route-dot" />
+
+                </div>
+
+              </div>
+
+            ))}
 
           </div>
 
         </div>
 
       </section>
-
 
       {/* =====================================================
           TESTIMONIALS
@@ -518,18 +516,17 @@ function Landing() {
 
           <div className="section-heading">
 
-            <span>
+            <span className="block text-center text-[11px] sm:text-xs font-bold tracking-[0.2em] uppercase text-[#806cb0]">
               COMMUNITY
             </span>
 
-            <h2>
-              Loved by commuters.
+            <h2 className="mt-3 text-center font-display text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-[-0.04em] leading-tight text-[#2b2340]">
+              Loved by everyday riders.
             </h2>
 
           </div>
 
-
-          <div className="testimonials-grid">
+          <div className="testimonials-grid rounded-2xl border border-border bg-surface-alt p-6 shadow-lg">
 
             {TESTIMONIALS.map(
               (testimonial) => (
@@ -558,13 +555,9 @@ function Landing() {
 
                   </div>
 
-
-                  <p className="testimonial-quote">
-
+                  <p className="testimonial-quote text-base md:text-[17px] leading-7 md:leading-8 tracking-[-0.01em]">
                     “{testimonial.quote}”
-
                   </p>
-
 
                   <div className="testimonial-user">
 
@@ -573,14 +566,13 @@ function Landing() {
                       alt=""
                     />
 
-
                     <div>
 
-                      <p>
+                      <p className="font-display text-sm font-bold tracking-[-0.01em] text-[#2b2340]">
                         {testimonial.name}
                       </p>
 
-                      <span>
+                      <span className="mt-1 block text-xs font-medium text-[#8b8498]">
                         {testimonial.role}
                       </span>
 
@@ -599,7 +591,6 @@ function Landing() {
 
       </section>
 
-
       {/* =====================================================
           CTA
       ===================================================== */}
@@ -609,26 +600,23 @@ function Landing() {
         <div className="cta-box">
 
           <div className="cta-glow-one" />
-
           <div className="cta-glow-two" />
-
 
           <div className="cta-content">
 
-            <h2>
+            <h2 className="font-display font-extrabold tracking-[-0.04em] leading-tight">
               Ready to share your ride?
             </h2>
 
-            <p>
+            <p className="text-base md:text-[17px] leading-7 md:leading-8 tracking-[-0.01em]">
               Join your organization's carpool
               network today. Your next commute
               could be a shared one.
             </p>
 
-
             <Link
               to="/signup"
-              className="cta-button"
+              className="cta-button font-bold tracking-[-0.01em]"
             >
 
               Get started
@@ -642,7 +630,6 @@ function Landing() {
         </div>
 
       </section>
-
 
       {/* =====================================================
           FOOTER
@@ -666,13 +653,11 @@ function Landing() {
 
             </span>
 
-
-            <span>
+            <span className="font-display font-extrabold tracking-[0.08em]">
               WAYFLOW
             </span>
 
           </Link>
-
 
           <div className="social-icons">
 
@@ -698,8 +683,7 @@ function Landing() {
 
           </div>
 
-
-          <p>
+          <p className="text-xs font-medium tracking-tight text-[#9891a8]">
             © {new Date().getFullYear()} Wayflow
           </p>
 
@@ -712,3 +696,4 @@ function Landing() {
 }
 
 export default Landing;
+

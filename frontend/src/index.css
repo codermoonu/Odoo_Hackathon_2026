@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-WAYFLOW design tokens — violet SaaS palette
+WAYFLOW DESIGN TOKENS — VIOLET SAAS PALETTE
 ========================================================================== */
 
 @theme {
@@ -1084,7 +1084,6 @@ MAIN CAR
 
   filter: none !important;
 
-  /* Flip left → right */
   transform: scaleX(-1);
 
   user-select: none;
@@ -1231,51 +1230,306 @@ HOW IT WORKS
   background: #ffffff;
 }
 
-.steps-grid {
-  display: grid;
+.how-section .section-heading {
+  position: relative;
+  z-index: 2;
+}
+
+.how-section .section-heading span {
+  display: inline-block;
+
+  color: #806cb0;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  letter-spacing: 0.16em;
+
+  margin-bottom: 12px;
+}
+
+.how-section .section-heading h2 {
+  margin: 0;
+
+  color: #241c35;
+
+  font-family: "Plus Jakarta Sans", sans-serif;
+
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+
+  letter-spacing: -0.04em;
+}
+
+/* ==========================================================================
+HOW IT WORKS — STEP GRID
+========================================================================== */
+
+.how-section .steps-grid {
+  position: relative;
 
   grid-template-columns:
     repeat(3, 1fr);
 
-  gap: 60px;
+  gap: 22px;
 
-  margin-top: 62px;
+  margin-top: 58px;
 }
 
-.step-card {
+/* Connecting line */
+
+.how-section .steps-grid::before {
+  content: "";
+
+  position: absolute;
+
+  top: 47px;
+  left: 11%;
+  right: 11%;
+
+  height: 1px;
+
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #ddd5f0,
+    #cfc4ea,
+    #ddd5f0,
+    transparent
+  );
+
+  z-index: 0;
+}
+
+/* ==========================================================================
+STEP CARD
+========================================================================== */
+
+.how-section .step-card {
   position: relative;
+
+  min-height: 250px;
+
+  padding: 30px;
+
+  border: 1px solid #e7e1f1;
+
+  border-radius: 20px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #ffffff,
+      #fbfaff
+    );
+
+  box-shadow:
+    0 8px 28px rgba(72, 51, 125, 0.045);
+
+  overflow: hidden;
+
+  transition:
+    transform 0.35s var(--ease-out),
+    border-color 0.35s ease,
+    box-shadow 0.35s ease,
+    background 0.35s ease;
 }
 
-.step-number {
-  color: #e8e1fa;
+/* Soft violet glow */
+
+.how-section .step-card::before {
+  content: "";
+
+  position: absolute;
+
+  width: 170px;
+  height: 170px;
+
+  top: -95px;
+  right: -80px;
+
+  border-radius: 50%;
+
+  background: rgba(124, 58, 237, 0.07);
+
+  filter: blur(35px);
+
+  opacity: 0;
+
+  transition:
+    opacity 0.35s ease;
+}
+
+/* Bottom accent */
+
+.how-section .step-card::after {
+  content: "";
+
+  position: absolute;
+
+  left: 30px;
+  right: 30px;
+  bottom: 0;
+
+  height: 3px;
+
+  border-radius: 999px 999px 0 0;
+
+  background: linear-gradient(
+    90deg,
+    #a18aec,
+    #7959dc
+  );
+
+  transform: scaleX(0);
+
+  transform-origin: left;
+
+  transition:
+    transform 0.4s var(--ease-out);
+}
+
+/* ==========================================================================
+STEP CARD HOVER
+========================================================================== */
+
+.how-section .step-card:hover {
+  transform: translateY(-9px);
+
+  border-color: #d5c9ee;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 22px 50px rgba(72, 51, 125, 0.11),
+    0 0 0 1px rgba(121, 89, 220, 0.03);
+}
+
+.how-section .step-card:hover::before {
+  opacity: 1;
+}
+
+.how-section .step-card:hover::after {
+  transform: scaleX(1);
+}
+
+/* ==========================================================================
+STEP NUMBER
+========================================================================== */
+
+.how-section .step-number {
+  position: relative;
+
+  z-index: 2;
+
+  width: 58px;
+  height: 58px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #e3dbf2;
+
+  border-radius: 16px;
+
+  color: #7959dc;
+
+  background: #f7f3ff;
 
   font-family: "Plus Jakarta Sans", sans-serif;
 
-  font-size: 64px;
+  font-size: 17px;
   font-weight: 800;
 
-  line-height: 1;
+  letter-spacing: 0.04em;
+
+  box-shadow:
+    0 8px 20px rgba(121, 89, 220, 0.08);
+
+  transition:
+    transform 0.35s var(--ease-spring),
+    color 0.3s ease,
+    background 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
-.step-card h3 {
-  margin-top: 20px;
+.how-section .step-card:hover .step-number {
+  transform:
+    translateY(-3px)
+    scale(1.06);
+
+  color: #ffffff;
+
+  background: linear-gradient(
+    135deg,
+    #9277ec,
+    #7657d6
+  );
+
+  border-color: transparent;
+
+  box-shadow:
+    0 12px 25px rgba(121, 89, 220, 0.22);
+}
+
+/* ==========================================================================
+STEP TITLE
+========================================================================== */
+
+.how-section .step-card h3 {
+  position: relative;
+
+  z-index: 2;
+
+  margin-top: 27px;
 
   color: #2b2340;
 
   font-family: "Plus Jakarta Sans", sans-serif;
 
   font-size: 19px;
-  font-weight: 700;
+  font-weight: 750;
+
+  letter-spacing: -0.02em;
+
+  transition:
+    color 0.3s ease,
+    transform 0.3s var(--ease-out);
 }
 
-.step-card p {
-  margin-top: 10px;
+.how-section .step-card:hover h3 {
+  color: #7959dc;
+
+  transform: translateX(2px);
+}
+
+/* ==========================================================================
+STEP DESCRIPTION
+========================================================================== */
+
+.how-section .step-card p {
+  position: relative;
+
+  z-index: 2;
+
+  max-width: 340px;
+
+  margin-top: 11px;
 
   color: #716980;
 
   font-size: 15px;
 
   line-height: 1.75;
+
+  transition:
+    color 0.3s ease;
+}
+
+.how-section .step-card:hover p {
+  color: #625a72;
 }
 
 /* ==========================================================================
@@ -1659,6 +1913,36 @@ RESPONSIVE
   .step-card {
     text-align: center;
   }
+
+  /* How It Works responsive */
+
+  .how-section .steps-grid {
+    grid-template-columns: 1fr;
+
+    max-width: 650px;
+
+    margin-left: auto;
+    margin-right: auto;
+
+    gap: 20px;
+  }
+
+  .how-section .steps-grid::before {
+    display: none;
+  }
+
+  .how-section .step-card {
+    min-height: auto;
+  }
+
+  .how-section .step-card p {
+    max-width: none;
+  }
+
+  .how-section .step-number {
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 
 @media (min-width: 1200px) {
@@ -1809,6 +2093,25 @@ RESPONSIVE
     flex-direction: column;
 
     text-align: center;
+  }
+
+  /* How It Works mobile */
+
+  .how-section .section-heading {
+    text-align: center;
+  }
+
+  .how-section .steps-grid {
+    margin-top: 42px;
+  }
+
+  .how-section .step-card {
+    padding: 26px;
+  }
+
+  .how-section .step-card::after {
+    left: 26px;
+    right: 26px;
   }
 
   /* SPLASH MOBILE */
