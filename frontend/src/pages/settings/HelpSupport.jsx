@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SUPPORT_PHONE } from "../../utils/constants";
 import {
   Search,
   MessageCircle,
@@ -233,7 +234,7 @@ function HelpSupport() {
                 <p className="mt-2 text-sm text-text-dim">Get help from our support team via email.</p>
               </a>
               <a
-                href="tel:+919999999999"
+                href={`tel:${SUPPORT_PHONE}`}
                 className="group rounded-2xl border border-border bg-black/[0.02] p-6 transition hover:-translate-y-1 hover:border-border-strong hover:bg-black/[0.04]"
               >
                 <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-black/5">

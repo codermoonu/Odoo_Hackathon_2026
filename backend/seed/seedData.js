@@ -110,12 +110,12 @@ async function main() {
   // 2. Employee users — clustered around South Kolkata, each near
   //    at least one other user so "nearby" search has real hits.
   const employeeSeeds = [
-    { name: "Rohan Das", location: LOCATIONS.jadavpur, isDriver: true },
-    { name: "Priya Bose", location: LOCATIONS.ballygunge, isDriver: true },
-    { name: "Sourav Ghosh", location: LOCATIONS.gariahat, isDriver: true },
-    { name: "Meera Iyer", location: LOCATIONS.jadavpur, isDriver: false },
-    { name: "Arjun Mukherjee", location: LOCATIONS.garia, isDriver: true },
-    { name: "Ishita Roy", location: LOCATIONS.ballygunge, isDriver: false },
+    { name: "Rohan Das", location: LOCATIONS.jadavpur, isDriver: true, phone: 9830012345 },
+    { name: "Priya Bose", location: LOCATIONS.ballygunge, isDriver: true, phone: 9830012346 },
+    { name: "Sourav Ghosh", location: LOCATIONS.gariahat, isDriver: true, phone: 9830012347 },
+    { name: "Meera Iyer", location: LOCATIONS.jadavpur, isDriver: false, phone: 9830012348 },
+    { name: "Arjun Mukherjee", location: LOCATIONS.garia, isDriver: true, phone: 9830012349 },
+    { name: "Ishita Roy", location: LOCATIONS.ballygunge, isDriver: false, phone: 9830012350 },
   ];
 
   const pw = await hashed(SEED_PASSWORD);
@@ -129,6 +129,7 @@ async function main() {
       role: "employee",
       organization: org._id,
       employeeId: `EMP-${String(i + 2).padStart(4, "0")}`,
+      phone: seed.phone,
       isActive: true,
     });
     users.push({ user, ...seed });

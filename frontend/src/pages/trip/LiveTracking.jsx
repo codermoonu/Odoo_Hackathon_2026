@@ -3,15 +3,21 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapPin, ArrowRight, User, Car, Clock3, AlertCircle, Radio, CheckCircle2 } from "lucide-react";
+import { MapPin, ArrowRight, User, Car, Clock3, AlertCircle, Radio, CheckCircle2, Phone, MessageCircle, LifeBuoy } from "lucide-react";
 import AppShell from "../../components/ui/AppShell";
 import Card from "../../components/ui/Card";
 import Badge from "../../components/ui/Badge";
+import ChatPanel from "../../components/trip/ChatPanel";
 import { useSocket } from "../../context/SocketContext";
 import { getTripById } from "../../services/trip";
+import { SUPPORT_PHONE } from "../../utils/constants";
 
 // How long the "You've arrived" overlay stays up before redirecting to Find a Ride.
 const ARRIVAL_REDIRECT_MS = 7000;
+
+// Simulated pickup ETA — no real per-trip pickup estimate exists yet, so this
+// just counts down from a plausible starting point while the driver "arrives".
+const INITIAL_ARRIVING_MINUTES = 4;
 
 const TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 const TILE_ATTRIBUTION = "&copy; OpenStreetMap contributors &copy; CARTO";
@@ -68,6 +74,8 @@ function LiveTracking() {
   const [isLive, setIsLive] = useState(false);
   const [simulating, setSimulating] = useState(false);
   const [arrived, setArrived] = useState(false);
+  const [arrivingMinutes, setArrivingMinutes] = useState(INITIAL_ARRIVING_MINUTES);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const isLiveRef = useRef(false);
   const arrivedRef = useRef(false);
@@ -76,6 +84,16 @@ function LiveTracking() {
   useEffect(() => {
     isLiveRef.current = isLive;
   }, [isLive]);
+
+  // Driver-arriving-at-pickup countdown — separate from the trip's own
+  // en-route-to-destination tracking, and stops once the driver is "here".
+  useEffect(() => {
+    if (arrived || arrivingMinutes <= 0) return;
+    const tick = setInterval(() => {
+      setArrivingMinutes((m) => Math.max(m - 1, 0));
+    }, 60000);
+    return () => clearInterval(tick);
+  }, [arrived, arrivingMinutes]);
 
   function handleArrival(destination) {
     if (arrivedRef.current) return;
@@ -268,6 +286,57 @@ function LiveTracking() {
           </div>
         </Card>
 
+        {!arrived && (
+          <Card className="flex flex-wrap items-center justify-between gap-4 p-5">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-violet-500/12 text-violet-700">
+                <User size={20} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">{trip.driver_name}</p>
+                <p className="mt-0.5 text-xs text-text-faint">
+                  {arrivingMinutes > 0
+                    ? `Arriving in ~${arrivingMinutes} min`
+                    : "Your driver should be here"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <a
+                href={trip.driver_phone ? `tel:${trip.driver_phone}` : undefined}
+                aria-disabled={!trip.driver_phone}
+                className={`flex items-center gap-1.5 rounded-xl border border-border px-3.5 py-2 text-xs font-semibold transition-colors ${
+                  trip.driver_phone
+                    ? "text-text hover:border-violet-400/40 hover:bg-black/[0.02]"
+                    : "cursor-not-allowed text-text-faint opacity-60"
+                }`}
+                onClick={(e) => {
+                  if (!trip.driver_phone) e.preventDefault();
+                }}
+              >
+                <Phone size={14} />
+                Call driver
+              </a>
+              <button
+                type="button"
+                onClick={() => setChatOpen(true)}
+                className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-border px-3.5 py-2 text-xs font-semibold transition-colors hover:border-violet-400/40 hover:bg-black/[0.02]"
+              >
+                <MessageCircle size={14} />
+                Message
+              </button>
+              <a
+                href={`tel:${SUPPORT_PHONE}`}
+                className="flex items-center gap-1.5 rounded-xl bg-violet-600 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-violet-500"
+              >
+                <LifeBuoy size={14} />
+                Customer care
+              </a>
+            </div>
+          </Card>
+        )}
+
         <Card className="relative h-[65vh] overflow-hidden p-0">
           <MapContainer
             center={[trip.start_coords.lat, trip.start_coords.lng]}
@@ -300,6 +369,8 @@ function LiveTracking() {
           )}
         </Card>
       </div>
+
+      <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} driverName={trip.driver_name} />
     </AppShell>
   );
 }

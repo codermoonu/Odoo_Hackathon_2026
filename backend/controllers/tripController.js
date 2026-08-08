@@ -99,9 +99,14 @@ exports.getTripById = async (req, res) => {
     const { id } = req.params;
 
     if (Trip.db && Trip.db.readyState === 1) {
-      const trip = await Trip.findOne({ trip_id: id });
+      const trip = await Trip.findOne({ trip_id: id }).populate('driver', 'phone');
       if (trip) {
-        return res.json({ success: true, trip });
+        // Flatten the populated driver into a plain phone number so `driver`
+        // keeps its usual shape (a plain id string) for other consumers.
+        const tripObj = trip.toObject();
+        tripObj.driver_phone = trip.driver?.phone || null;
+        tripObj.driver = trip.driver?._id || trip.driver || null;
+        return res.json({ success: true, trip: tripObj });
       }
     }
 
