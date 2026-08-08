@@ -1,19 +1,34 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, ArrowLeftRight } from "lucide-react";
+import { Search, ArrowLeftRight,MapPin } from "lucide-react";
 import AppShell from "../../components/ui/AppShell";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import LocationAutocomplete from "../../components/ride/LocationAutocomplete";
 import MapView from "../../components/map/MapView";
 import { assets } from "../../assets/assets";
-
+import { useSavedPlaces } from "../../hooks/useSavedPlaces";
 function FindRide() {
   const navigate = useNavigate();
   const [pickup, setPickup] = useState(null);       // { address, lat, lng } | null
   const [destination, setDestination] = useState(null);
   const [activeField, setActiveField] = useState(null); // "pickup" | "destination" | null
   const [error, setError] = useState("");
+
+  const { places: savedPlaces } = useSavedPlaces();
+
+function applySavedPlace(place) {
+  const payload = { address: place.address, lat: place.lat, lng: place.lng };
+  // Fill whichever field was last focused; default to pickup, then destination.
+  if (activeField === "destination") {
+    setDestination(payload);
+  } else if (activeField === "pickup" || !pickup) {
+    setPickup(payload);
+  } else {
+    setDestination(payload);
+  }
+  setError("");
+}
 
   function handleMapPick(field, coords) {
     if (field === "pickup") {
@@ -54,6 +69,21 @@ function FindRide() {
               Search rides published by coworkers going your way.
             </p>
           </div>
+          {savedPlaces.length > 0 && (
+  <div className="mt-6 flex flex-wrap justify-center gap-2 lg:justify-start">
+    {savedPlaces.map((place) => (
+      <button
+        key={place.id}
+        type="button"
+        onClick={() => applySavedPlace(place)}
+        className="flex items-center gap-1.5 rounded-full border border-border bg-surface-alt/60 px-3.5 py-1.5 text-xs font-semibold text-text-dim transition-colors hover:border-violet-400/40 hover:text-violet-300"
+      >
+        <MapPin size={12} className="text-violet-400" />
+        {place.name}
+      </button>
+    ))}
+  </div>
+)}
 
           <Card className="mt-8 p-6 sm:p-8">
             <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
@@ -64,16 +94,17 @@ function FindRide() {
               )}
 
               <div onFocus={() => setActiveField("pickup")}>
-                <LocationAutocomplete
-                  label="Pickup location"
-                  placeholder="e.g. Koramangala, Bengaluru"
-                  defaultValue={pickup?.address}
-                  onSelect={(place) => {
-                    setPickup(place);
-                    setError("");
-                  }}
-                />
-              </div>
+  <LocationAutocomplete
+    key={`pickup-${pickup?.lat ?? "empty"}-${pickup?.lng ?? "empty"}`}
+    label="Pickup location"
+    placeholder="e.g. Koramangala, Bengaluru"
+    defaultValue={pickup?.address}
+    onSelect={(place) => {
+      setPickup(place);
+      setError("");
+    }}
+  />
+</div>
 
               <button
                 type="button"
@@ -85,16 +116,17 @@ function FindRide() {
               </button>
 
               <div onFocus={() => setActiveField("destination")}>
-                <LocationAutocomplete
-                  label="Destination"
-                  placeholder="e.g. Whitefield, Bengaluru"
-                  defaultValue={destination?.address}
-                  onSelect={(place) => {
-                    setDestination(place);
-                    setError("");
-                  }}
-                />
-              </div>
+  <LocationAutocomplete
+    key={`destination-${destination?.lat ?? "empty"}-${destination?.lng ?? "empty"}`}
+    label="Destination"
+    placeholder="e.g. Whitefield, Bengaluru"
+    defaultValue={destination?.address}
+    onSelect={(place) => {
+      setDestination(place);
+      setError("");
+    }}
+  />
+</div>
 
               <Button type="submit" className="mt-2 w-full justify-center">
                 <Search size={17} />

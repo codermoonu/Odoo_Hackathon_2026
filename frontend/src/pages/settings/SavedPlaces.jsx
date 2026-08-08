@@ -1,17 +1,12 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Home, Briefcase, MapPin, Plus, Pencil, Trash2, Bookmark } from "lucide-react";
 import AppShell from "../../components/ui/AppShell";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import Modal from "../../components/ui/Modal";
-import { FormField } from "../../components/ui/FormField";
-
-const STORAGE_KEY = "wayflow_saved_places";
-
-const defaultPlaces = [
-  { id: "home", name: "Home", address: "Koramangala, Bengaluru", kind: "home" },
-  { id: "office", name: "Office", address: "MG Road, Bengaluru", kind: "work" },
-];
+import { FormField, SelectField } from "../../components/ui/FormField";
+import LocationAutocomplete from "../../components/ride/LocationAutocomplete";
+import { useSavedPlaces } from "../../hooks/useSavedPlaces";
 
 function getIcon(kind) {
   if (kind === "home") return Home;
@@ -20,35 +15,15 @@ function getIcon(kind) {
 }
 
 function SavedPlaces() {
-  const [places, setPlaces] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { places, loading, upsertPlace, removePlace } = useSavedPlaces();
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState({ name: "", address: "", kind: "other" });
+  const [form, setForm] = useState({ name: "", address: "", lat: null, lng: null, kind: "other" });
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    function loadPlaces() {
-      try {
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-        setPlaces(saved.length ? saved : defaultPlaces);
-      } catch {
-        setPlaces(defaultPlaces);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadPlaces();
-  }, []);
-
-  useEffect(() => {
-    if (!loading) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(places));
-    }
-  }, [places, loading]);
-
   function resetForm() {
-    setForm({ name: "", address: "", kind: "other" });
+    setForm({ name: "", address: "", lat: null, lng: null, kind: "other" });
     setEditingId(null);
     setError("");
   }
@@ -60,7 +35,7 @@ function SavedPlaces() {
 
   function openEditModal(place) {
     setEditingId(place.id);
-    setForm({ name: place.name, address: place.address, kind: place.kind || "other" });
+    setForm({ name: place.name, address: place.address, lat: place.lat, lng: place.lng, kind: place.kind || "other" });
     setError("");
     setModalOpen(true);
   }
@@ -69,33 +44,22 @@ function SavedPlaces() {
     e.preventDefault();
 
     const name = form.name.trim();
-    const address = form.address.trim();
-
-    if (!name || !address) {
+    if (!name || !form.address.trim()) {
       setError("Name and address are required.");
       return;
     }
+    if (form.lat == null || form.lng == null) {
+      setError("Pick an address from the suggestions so we can save its exact location.");
+      return;
+    }
 
-    const nextPlace = {
-      id: editingId || `place-${Date.now()}`,
-      name,
-      address,
-      kind: form.kind,
-    };
-
-    setPlaces((current) => {
-      if (editingId) {
-        return current.map((place) => (place.id === editingId ? nextPlace : place));
-      }
-      return [nextPlace, ...current];
-    });
+    upsertPlace(
+      { name, address: form.address.trim(), lat: form.lat, lng: form.lng, kind: form.kind },
+      editingId
+    );
 
     setModalOpen(false);
     resetForm();
-  }
-
-  function handleDelete(id) {
-    setPlaces((current) => current.filter((place) => place.id !== id));
   }
 
   return (
@@ -105,7 +69,7 @@ function SavedPlaces() {
           <div>
             <h2 className="font-display text-xl font-bold">Quick access locations</h2>
             <p className="mt-1 text-sm text-text-dim">
-              Save frequent pickup and drop-off points for faster ride searches.
+              Save frequent pickup and drop-off points — they'll show up as quick shortcuts on Find a Ride.
             </p>
           </div>
           <Button onClick={openCreateModal} className="justify-center">
@@ -113,12 +77,6 @@ function SavedPlaces() {
             Add place
           </Button>
         </div>
-
-        {error && (
-          <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
-        )}
 
         {loading ? (
           <div className="space-y-3">
@@ -159,7 +117,7 @@ function SavedPlaces() {
                       <Pencil size={15} />
                       Edit
                     </Button>
-                    <Button variant="danger" onClick={() => handleDelete(place.id)} className="px-3 py-2.5">
+                    <Button variant="danger" onClick={() => removePlace(place.id)} className="px-3 py-2.5">
                       <Trash2 size={15} />
                       Delete
                     </Button>
@@ -173,6 +131,12 @@ function SavedPlaces() {
 
       <Modal open={modalOpen} onClose={() => { setModalOpen(false); resetForm(); }} title={editingId ? "Edit saved place" : "Add saved place"}>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {error && (
+            <div role="alert" className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-600">
+              {error}
+            </div>
+          )}
+
           <FormField
             label="Place name"
             placeholder="Home, Office, Airport"
@@ -180,25 +144,28 @@ function SavedPlaces() {
             onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
           />
 
-          <FormField
+          {/* key forces remount so the input resets when switching between edit targets */}
+          <LocationAutocomplete
+            key={editingId || "new"}
             label="Address"
-            placeholder="Koramangala, Bengaluru"
-            value={form.address}
-            onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
+            placeholder="e.g. Koramangala, Bengaluru"
+            defaultValue={form.address}
+            onSelect={(place) => {
+              setForm((prev) => ({ ...prev, address: place.address, lat: place.lat, lng: place.lng }));
+              setError("");
+            }}
+            required
           />
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-text-dim">Type</label>
-            <select
-              value={form.kind}
-              onChange={(e) => setForm((prev) => ({ ...prev, kind: e.target.value }))}
-              className="w-full rounded-xl border border-border bg-surface-alt/60 px-4 py-2.5 text-[15px] text-text outline-none transition-colors duration-150 focus:border-violet-400"
-            >
-              <option value="home">Home</option>
-              <option value="work">Work</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
+          <SelectField
+            label="Type"
+            value={form.kind}
+            onChange={(e) => setForm((prev) => ({ ...prev, kind: e.target.value }))}
+          >
+            <option value="home">Home</option>
+            <option value="work">Work</option>
+            <option value="other">Other</option>
+          </SelectField>
 
           <div className="flex items-center justify-end gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={() => { setModalOpen(false); resetForm(); }}>
