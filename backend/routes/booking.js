@@ -4,7 +4,7 @@ const {
     bookRide, 
     getMyBookings 
 } = require("../controllers/bookingController");
-const { protect } = require("../middleware/auth");
+const protect = require("../middlewares/userMiddleware");
 
 router.use(protect);
 

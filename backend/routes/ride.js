@@ -5,7 +5,7 @@ const {
     searchRides, 
     getRideById 
 } = require("../controllers/rideController");
-const { protect } = require("../middleware/auth");
+const protect = require("../middlewares/userMiddleware");
 
 router.use(protect);
 

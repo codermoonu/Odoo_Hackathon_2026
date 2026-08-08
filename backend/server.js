@@ -1,9 +1,11 @@
 const dotenv = require('dotenv');
+
+// Load environment variables before anything else is required — several
+// modules (e.g. config/razorpay.js) read process.env at require-time.
+dotenv.config();
+
 const connectDB = require('./config/db');
 const app = require('./app'); // Import the Express app from app.js
-
-// Load environment variables
-dotenv.config();
 
 // Connect to MongoDB
 connectDB();
