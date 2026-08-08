@@ -11,6 +11,7 @@ import ChatPanel from "../../components/trip/ChatPanel";
 import { useSocket } from "../../context/SocketContext";
 import { getTripById } from "../../services/trip";
 import { SUPPORT_PHONE } from "../../utils/constants";
+import { isValidCoord } from "../../utils/geo";
 
 // How long the "You've arrived" overlay stays up before redirecting to Find a Ride.
 const ARRIVAL_REDIRECT_MS = 7000;
@@ -21,6 +22,7 @@ const INITIAL_ARRIVING_MINUTES = 4;
 
 const TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 const TILE_ATTRIBUTION = "&copy; OpenStreetMap contributors &copy; CARTO";
+const DEFAULT_CENTER = [12.9716, 77.5946]; // Bengaluru — used if a trip is ever missing coords
 
 const STATUS_TONE = {
   PUBLISHED: "neutral",
@@ -52,7 +54,7 @@ const vehicleIcon = L.divIcon({
 function FitToRoute({ pickup, destination }) {
   const map = useMap();
   useEffect(() => {
-    if (!pickup || !destination) return;
+    if (!isValidCoord(pickup) || !isValidCoord(destination)) return;
     map.fitBounds(L.latLngBounds([[pickup.lat, pickup.lng], [destination.lat, destination.lng]]), {
       padding: [60, 60],
     });
@@ -98,7 +100,7 @@ function LiveTracking() {
   function handleArrival(destination) {
     if (arrivedRef.current) return;
     arrivedRef.current = true;
-    if (destination) setLiveLocation(destination);
+    if (isValidCoord(destination)) setLiveLocation(destination);
     if (simTimerRef.current) {
       clearInterval(simTimerRef.current);
       simTimerRef.current = null;
@@ -114,7 +116,7 @@ function LiveTracking() {
       .then((data) => {
         if (!active) return;
         setTrip(data);
-        if (data.current_location) setLiveLocation(data.current_location);
+        if (isValidCoord(data.current_location)) setLiveLocation(data.current_location);
         if (data.status) setLiveStatus(data.status);
       })
       .catch((err) => {
@@ -135,7 +137,7 @@ function LiveTracking() {
 
     const offState = on("trip_state", (payload) => {
       if (payload?.trip_id !== trip.trip_id || !payload.state) return;
-      if (payload.state.current_location) setLiveLocation(payload.state.current_location);
+      if (isValidCoord(payload.state.current_location)) setLiveLocation(payload.state.current_location);
       if (payload.state.status) setLiveStatus(payload.state.status);
     });
     const offLocation = on("live_location_update", (payload) => {
@@ -150,7 +152,7 @@ function LiveTracking() {
         handleArrival(payload.location);
         return;
       }
-      setLiveLocation(payload.location);
+      if (isValidCoord(payload.location)) setLiveLocation(payload.location);
       if (payload.status) setLiveStatus(payload.status);
     });
     const offStatus = on("trip_status_updated", (payload) => {
@@ -339,18 +341,22 @@ function LiveTracking() {
 
         <Card className="relative h-[65vh] overflow-hidden p-0">
           <MapContainer
-            center={[trip.start_coords.lat, trip.start_coords.lng]}
+            center={isValidCoord(trip.start_coords) ? [trip.start_coords.lat, trip.start_coords.lng] : DEFAULT_CENTER}
             zoom={12}
             style={{ height: "100%", width: "100%" }}
             scrollWheelZoom
           >
             <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
-            <Marker position={[trip.start_coords.lat, trip.start_coords.lng]} icon={pickupIcon} />
-            <Marker position={[trip.dest_coords.lat, trip.dest_coords.lng]} icon={destIcon} />
+            {isValidCoord(trip.start_coords) && (
+              <Marker position={[trip.start_coords.lat, trip.start_coords.lng]} icon={pickupIcon} />
+            )}
+            {isValidCoord(trip.dest_coords) && (
+              <Marker position={[trip.dest_coords.lat, trip.dest_coords.lng]} icon={destIcon} />
+            )}
             {routePositions && (
               <Polyline positions={routePositions} pathOptions={{ color: "#a855f7", weight: 4, opacity: 0.85 }} />
             )}
-            {liveLocation && <Marker position={[liveLocation.lat, liveLocation.lng]} icon={vehicleIcon} />}
+            {isValidCoord(liveLocation) && <Marker position={[liveLocation.lat, liveLocation.lng]} icon={vehicleIcon} />}
             <FitToRoute pickup={trip.start_coords} destination={trip.dest_coords} />
           </MapContainer>
 

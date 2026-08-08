@@ -4,6 +4,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { JourneyProvider } from "./context/JourneyContext";
 import { AdminProvider } from "./pages/admin/AdminContext";
 import { SocketProvider } from "./context/SocketContext";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 import AppRoutes from "./routes/AppRoutes";
 // import CarRig from "./components/CarRig";
@@ -19,7 +20,9 @@ function App() {
                   drives from the splash screen straight into its resting spot
                   on the landing page, so it never unmounts mid-journey. */}
               {/* <CarRig /> */}
-              <AppRoutes />
+              <ErrorBoundary>
+                <AppRoutes />
+              </ErrorBoundary>
             </AdminProvider>
           </JourneyProvider>
         </SocketProvider>

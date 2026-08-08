@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from "react-
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { geocode, previewRoute } from "../../services/route";
+import { isValidCoord } from "../../utils/geo";
 
 const TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 const TILE_ATTRIBUTION = "&copy; OpenStreetMap contributors &copy; CARTO";
@@ -88,18 +89,22 @@ function TripsMap({ trips = [], activeTripId = null, onSelectTrip = () => {} }) 
 
       // Sequential, not Promise.all — plays nice with Nominatim's ~1 req/sec usage policy
       for (const trip of trips) {
-        const pickup =
-          trip.pickupLat != null && trip.pickupLng != null
+        // Trip documents store coords as start_coords/dest_coords; pickupLat/destLat
+        // are kept as a fallback shape only, so this only geocodes when neither exists.
+        const pickup = isValidCoord(trip.start_coords)
+          ? trip.start_coords
+          : trip.pickupLat != null && trip.pickupLng != null
             ? { lat: trip.pickupLat, lng: trip.pickupLng }
             : await geocodeAddress(trip.start_address);
 
-        const dest =
-          trip.destLat != null && trip.destLng != null
+        const dest = isValidCoord(trip.dest_coords)
+          ? trip.dest_coords
+          : trip.destLat != null && trip.destLng != null
             ? { lat: trip.destLat, lng: trip.destLng }
             : await geocodeAddress(trip.dest_address);
 
         if (cancelled) return;
-        if (pickup && dest) out.push({ trip, pickup, dest });
+        if (isValidCoord(pickup) && isValidCoord(dest)) out.push({ trip, pickup, dest });
       }
 
       if (!cancelled) {
