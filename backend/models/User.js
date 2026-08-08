@@ -13,6 +13,13 @@ const userSchema = new mongoose.Schema(
     gender: { type: String, default: "Not selected" },
     employeeId: { type: String, trim: true },
     phone: { type: Number, default: 0 },
+
+    role: { type: String, enum: ["admin", "employee"], default: "employee" },
+    organization: { type: mongoose.Schema.Types.ObjectId, ref: "Organization" },
+
+    // Access is granted/revoked by an org admin; login is blocked while false.
+    isActive: { type: Boolean, default: true },
+    lastLoginAt: { type: Date },
   },
   { timestamps: true }
 );

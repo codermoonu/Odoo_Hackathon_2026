@@ -16,6 +16,9 @@ const protect = async (req, res, next) => {
     if (!user) {
       return res.status(401).json({ message: "Not authorized, user not found" });
     }
+    if (!user.isActive) {
+      return res.status(403).json({ message: "Your account access has been disabled. Contact your organization admin." });
+    }
 
     req.user = user;
     next();

@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const vehicleSchema = new mongoose.Schema(
   {
     owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    // organization: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", required: true },
+    organization: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", required: true },
 
     make: { type: String, trim: true },
     model: { type: String, required: true, trim: true },

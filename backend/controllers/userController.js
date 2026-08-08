@@ -57,6 +57,12 @@ const loginUser = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
+    if (!user.isActive) {
+      return res.status(403).json({ message: "Your account access has been disabled. Contact your organization admin." });
+    }
+
+    user.lastLoginAt = new Date();
+    await user.save();
 
     const token = generateToken(user._id);
 
