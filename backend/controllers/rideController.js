@@ -1,207 +1,85 @@
 const mongoose = require("mongoose");
+const Ride = require("../models/Ride");
+const Vehicle = require("../models/Vehicle");
 
-/**
- * Location Sub-schema
- * -----------------------------------------------------------------------
- * Used for both pickup and destination. Stored as GeoJSON Point so we
- * can run $near / $geoWithin queries during ride matching (Find a Ride).
- */
-const locationSchema = new mongoose.Schema(
-  {
-    address: {
-      type: String,
-      required: [true, "Address is required"],
-      trim: true,
-    },
-    coordinates: {
-      // GeoJSON: [longitude, latitude] — order matters for Mongo geo queries
-      type: [Number],
-      required: true,
-      validate: {
-        validator: (val) => Array.isArray(val) && val.length === 2,
-        message: "Coordinates must be an array of [longitude, latitude]",
-      },
-    },
-  },
-  { _id: false }
-);
+// Publish a new ride (Offer a Ride)
+const publishRide = async (req, res) => {
+  try {
+    const { pickupLocation, destination, travelDate, travelTime, availableSeats, farePerSeat, vehicleId, organization } = req.body;
 
-const geoPointSchema = new mongoose.Schema(
-  {
-    type: {
-      type: String,
-      enum: ["Point"],
-      default: "Point",
-    },
-    coordinates: {
-      type: [Number], // [lng, lat]
-      required: true,
-    },
-  },
-  { _id: false }
-);
+    if (!pickupLocation || !destination || !travelDate || !travelTime || !availableSeats || !farePerSeat || !vehicleId) {
+      return res.status(400).json({ message: "All ride details including vehicleId are required." });
+    }
 
-/**
- * Route Snapshot Sub-schema
- * -----------------------------------------------------------------------
- * Captures the result of the Route Confirmation step (calculated via the
- * Maps service) at the time the ride was published or searched. Stored so
- * "Available Rides" can display route info without re-calling the Maps API.
- */
-const routeSnapshotSchema = new mongoose.Schema(
-  {
-    distanceInKm: { type: Number, required: true },
-    durationInMinutes: { type: Number, required: true },
-    polyline: { type: String }, // encoded polyline for map rendering
-  },
-  { _id: false }
-);
+    // Verify the vehicle belongs to the user
+    const vehicle = await Vehicle.findById(vehicleId);
+    if (!vehicle || vehicle.owner.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Invalid vehicle or unauthorized." });
+    }
 
-/**
- * Recurring Ride Sub-schema
- * -----------------------------------------------------------------------
- * "Recurring Ride" is a required field in Find/Offer a Ride. This captures
- * the pattern so the matching service can expand it into individual
- * ride instances or match against a recurring offer.
- */
-const recurrenceSchema = new mongoose.Schema(
-  {
-    isRecurring: { type: Boolean, default: false },
-    daysOfWeek: {
-      // e.g. ["MON", "TUE", "WED", "THU", "FRI"]
-      type: [String],
-      enum: ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"],
-      default: [],
-    },
-    endDate: {
-      // recurrence stops after this date; optional
-      type: Date,
-    },
-  },
-  { _id: false }
-);
+    if (availableSeats > vehicle.seatingCapacity) {
+        return res.status(400).json({ message: "Available seats cannot exceed vehicle capacity." });
+    }
 
-/**
- * Ride Schema
- * -----------------------------------------------------------------------
- * Represents a ride PUBLISHED by a driver (Offer a Ride). This same
- * document is what gets returned/matched against during Find a Ride
- * search, and what Available Rides renders.
- */
-const rideSchema = new mongoose.Schema(
-  {
-    // ---- Driver & Vehicle ----
-    driver: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-      index: true,
-    },
+    const ride = await Ride.create({
+      driver: req.user._id,
+      organization: organization || req.user.organization,
+      vehicle: vehicleId,
+      pickupLocation,
+      destination,
+      travelDate,
+      travelTime,
+      availableSeats,
+      farePerSeat,
+      status: "Published" // e.g., Published, FullyBooked, Cancelled
+    });
 
-    vehicle: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Vehicle",
-      required: [true, "A registered vehicle is required to publish a ride"],
-    },
-
-    organization: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Organization",
-      required: true,
-      index: true,
-    },
-
-    // ---- Required Information (Find a Ride / Offer a Ride) ----
-    pickup: {
-      type: locationSchema,
-      required: true,
-    },
-
-    destination: {
-      type: locationSchema,
-      required: true,
-    },
-
-    // Separate geo point fields (mirrors pickup/destination coordinates)
-    // purely so we can attach 2dsphere indexes cleanly for $near queries.
-    pickupPoint: {
-      type: geoPointSchema,
-      required: true,
-    },
-
-    destinationPoint: {
-      type: geoPointSchema,
-      required: true,
-    },
-
-    travelDate: {
-      type: Date,
-      required: [true, "Travel date is required"],
-    },
-
-    travelTime: {
-      // stored as "HH:mm" (24hr) — kept separate from travelDate for
-      // simpler search-by-time-window queries
-      type: String,
-      required: [true, "Travel time is required"],
-      match: [/^([01]\d|2[0-3]):([0-5]\d)$/, "Travel time must be in HH:mm format"],
-    },
-
-    availableSeats: {
-      type: Number,
-      required: [true, "Available seats is required"],
-      min: [0, "Available seats cannot be negative"],
-    },
-
-    totalSeats: {
-      // snapshot of seats offered at publish time; availableSeats decreases
-      // as bookings come in, totalSeats stays fixed for reporting.
-      type: Number,
-      required: true,
-    },
-
-    farePerSeat: {
-      type: Number,
-      required: [true, "Fare per seat is required"],
-      min: [0, "Fare cannot be negative"],
-    },
-
-    recurrence: {
-      type: recurrenceSchema,
-      default: () => ({}),
-    },
-
-    // ---- Route Confirmation ----
-    route: {
-      type: routeSnapshotSchema,
-      required: true,
-    },
-
-    // ---- Ride lifecycle ----
-    status: {
-      type: String,
-      enum: ["active", "full", "cancelled", "completed", "expired"],
-      default: "active",
-      index: true,
-    },
-  },
-  { timestamps: true }
-);
-
-// Geo indexes power proximity-based ride matching in rideMatching.service.js
-rideSchema.index({ pickupPoint: "2dsphere" });
-rideSchema.index({ destinationPoint: "2dsphere" });
-
-// Common compound index for the Find a Ride search
-// (date + time + status are filtered on almost every search query)
-rideSchema.index({ travelDate: 1, status: 1 });
-
-// Prevents overbooking: available seats must never exceed total seats
-rideSchema.pre("save", function (next) {
-  if (this.availableSeats > this.totalSeats) {
-    return next(new Error("availableSeats cannot exceed totalSeats"));
+    res.status(201).json(ride);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-  next();
-});
+};
 
-module.exports = mongoose.model("Ride", rideSchema);
+// Search for matching rides (Find a Ride)
+const searchRides = async (req, res) => {
+  try {
+    const { pickupLocation, destination, travelDate, seatsRequired } = req.query;
+    
+    // Build the query object dynamically based on provided search params
+    let query = { 
+        status: "Published", 
+        driver: { $ne: req.user._id } // Don't show user's own rides
+    };
+
+    if (pickupLocation) query.pickupLocation = { $regex: pickupLocation, $options: "i" };
+    if (destination) query.destination = { $regex: destination, $options: "i" };
+    if (travelDate) query.travelDate = new Date(travelDate);
+    if (seatsRequired) query.availableSeats = { $gte: parseInt(seatsRequired) };
+
+    const rides = await Ride.find(query)
+      .populate("driver", "name email phone")
+      .populate("vehicle", "make model registrationNumber")
+      .sort({ travelDate: 1, travelTime: 1 });
+
+    res.status(200).json(rides);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const getRideById = async (req, res) => {
+  try {
+    const ride = await Ride.findById(req.params.id)
+        .populate("driver", "name phone")
+        .populate("vehicle", "make model registrationNumber");
+        
+    if (!ride) {
+      return res.status(404).json({ message: "Ride not found" });
+    }
+    res.status(200).json(ride);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { publishRide, searchRides, getRideById };
