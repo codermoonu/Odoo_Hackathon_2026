@@ -33,7 +33,7 @@ const bookRide = async (req, res) => {
           },
         },
       ],
-      { new: true }
+      { new: true, updatePipeline: true }
     );
 
     if (!ride) {
