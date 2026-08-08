@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
-import { MapPin, ArrowRight, Users, Fuel, CheckCircle2, SearchX, List, Map as MapIcon } from "lucide-react";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import { MapPin, ArrowRight, Users, Fuel, SearchX, List, Map as MapIcon, CreditCard } from "lucide-react";
 import AppShell from "../../components/ui/AppShell";
 import Card from "../../components/ui/Card";
 import Badge from "../../components/ui/Badge";
@@ -24,13 +24,13 @@ function matches(text, query) {
 
 function AvailableRides() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const pickup = searchParams.get("pickup") || "";
   const destination = searchParams.get("destination") || "";
 
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [requested, setRequested] = useState({});
   const [view, setView] = useState("list"); // "list" | "map"
   const [hoveredTripId, setHoveredTripId] = useState(null);
 
@@ -60,7 +60,7 @@ function AvailableRides() {
   );
 
   function handleRequestSeat(tripKey) {
-    setRequested((r) => ({ ...r, [tripKey]: true }));
+    navigate(`/trips/${tripKey}/pay`);
   }
 
   return (
@@ -136,8 +136,7 @@ function AvailableRides() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {filtered.map((trip) => {
             const key = trip.trip_id || trip.id;
-            const isRequested = !!requested[key];
-            const seats = getAvailableSeats(trip, isRequested ? 1 : 0);
+            const seats = getAvailableSeats(trip, 0);
             return (
               <Card
                 key={key}
@@ -171,7 +170,7 @@ function AvailableRides() {
                   <div className="flex items-center gap-4 text-sm text-text-dim">
                     <span className="flex items-center gap-1.5">
                       <Users size={15} className="text-violet-600" />
-                      {getSeatStatusLabel(trip, isRequested ? 1 : 0)}
+                      {getSeatStatusLabel(trip, 0)}
                     </span>
                     {trip.distance_km != null && (
                       <span className="flex items-center gap-1.5">
@@ -185,21 +184,15 @@ function AvailableRides() {
                   </p>
                 </div>
 
-                {isRequested ? (
-                  <div className="flex items-center justify-center gap-2 rounded-xl bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-700">
-                    <CheckCircle2 size={16} />
-                    Seat requested
-                  </div>
-                ) : (
-                  <Button
-                    variant="secondary"
-                    className="w-full justify-center"
-                    disabled={seats === 0}
-                    onClick={() => handleRequestSeat(key)}
-                  >
-                    {seats === 0 ? "Full" : "Request seat"}
-                  </Button>
-                )}
+                <Button
+                  variant="secondary"
+                  className="w-full justify-center"
+                  disabled={seats === 0}
+                  onClick={() => handleRequestSeat(key)}
+                >
+                  <CreditCard size={16} />
+                  {seats === 0 ? "Full" : "Request seat & pay"}
+                </Button>
               </Card>
             );
           })}

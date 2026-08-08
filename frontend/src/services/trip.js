@@ -9,7 +9,7 @@ export function getAllTrips() {
 }
 
 export function getTripById(id) {
-  return api.get(`/trips/${id}`).then((res) => res.data);
+  return api.get(`/trips/${id}`).then((res) => res.data.trip);
 }
 
 export function updateTripStatus(id, status) {

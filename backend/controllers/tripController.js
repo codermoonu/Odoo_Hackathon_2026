@@ -34,6 +34,7 @@ exports.createTrip = async (req, res) => {
 
     const tripPayload = {
       trip_id: tripId,
+      driver: req.user._id,
       driver_name: driver_name || 'John Doe (Employee #402)',
       vehicle: vehicle || 'Toyota Camry (KA-01-AB-1234)',
       start_address,
@@ -126,6 +127,15 @@ exports.updateTripStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
+
+    if (Trip.db && Trip.db.readyState === 1) {
+      const trip = await Trip.findOne({ trip_id: id });
+      // Trips published before the `driver` field existed have no owner on record,
+      // so ownership can't be verified for them — allow the update rather than lock everyone out.
+      if (trip && trip.driver && trip.driver.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ success: false, error: 'Not authorized to update this trip.' });
+      }
+    }
 
     const updatedState = trackingService.updateTripStatus(id, status);
 

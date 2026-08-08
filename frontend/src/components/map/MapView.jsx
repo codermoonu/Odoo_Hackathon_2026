@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { MapContainer, TileLayer, Marker, Polyline, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { previewRoute } from "../../services/route";
 
 const TILE_URL = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
 const TILE_ATTRIBUTION = "&copy; OpenStreetMap contributors &copy; CARTO";
@@ -53,7 +54,7 @@ function ClickToPick({ activeField, onPick }) {
  * @param activeField  "pickup" | "destination" | null — which field a map click should fill
  * @param onPick        (field, {lat, lng}) => void — called on map click
  */
-function MapView({ pickup, destination, activeField = null, onPick = () => {} }) {
+function MapView({ pickup, destination, activeField = null, onPick = () => {}, showSummary = false }) {
   const [route, setRoute] = useState(null);
 
   useEffect(() => {
@@ -64,13 +65,12 @@ function MapView({ pickup, destination, activeField = null, onPick = () => {} })
         return;
       }
       try {
-        // NOTE: adjust this path/shape to match your actual OSRM proxy route.
-        // Expected here: { geometry: { coordinates: [[lng,lat], ...] }, distanceKm, durationMin }
-        const res = await fetch(
-          `/api/route/directions?fromLat=${pickup.lat}&fromLng=${pickup.lng}&toLat=${destination.lat}&toLng=${destination.lng}`
-        );
-        if (!res.ok) throw new Error("route fetch failed");
-        const data = await res.json();
+        const data = await previewRoute({
+          origin_lat: pickup.lat,
+          origin_lng: pickup.lng,
+          dest_lat: destination.lat,
+          dest_lng: destination.lng,
+        });
         if (!cancelled) setRoute(data);
       } catch {
         if (!cancelled) setRoute(null);
@@ -87,7 +87,12 @@ function MapView({ pickup, destination, activeField = null, onPick = () => {} })
   }, [pickup, destination]);
 
   return (
-    <div className="h-full w-full overflow-hidden rounded-2xl border border-border">
+    <div className="relative h-full w-full overflow-hidden rounded-2xl border border-border">
+      {showSummary && route && (
+        <div className="absolute top-3 left-1/2 z-[1000] -translate-x-1/2 rounded-full border border-border bg-surface/95 px-4 py-1.5 text-xs font-semibold text-text shadow-lg backdrop-blur">
+          {route.distance_km} km · {Math.round(route.duration_mins)} min
+        </div>
+      )}
       <MapContainer center={center} zoom={12} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
         <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
         {pickup && <Marker position={[pickup.lat, pickup.lng]} icon={pickupIcon} />}

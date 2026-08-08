@@ -13,6 +13,7 @@ import AvailableRides from "../pages/ride/AvailableRides";
 import MyVehicle from "../pages/ride/MyVehicle";
 import MyTrips from "../pages/trip/MyTrips";
 import Wallet from "../pages/payment/Wallet";
+import Payment from "../pages/payment/Payment";
 import Settings from "../pages/settings/Settings";
 
 import RouteConfirmation from "../pages/ride/RouteConfirmation";
@@ -97,6 +98,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Wallet />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/trips/:id/pay"
+        element={
+          <ProtectedRoute>
+            <Payment />
           </ProtectedRoute>
         }
       />

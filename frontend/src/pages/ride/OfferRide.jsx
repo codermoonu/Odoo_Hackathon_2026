@@ -11,7 +11,6 @@ import { getVehicles } from "../../services/vehicle";
 import { previewRoute } from "../../services/route";
 import { createTrip } from "../../services/trip";
 import { formatCurrency } from "../../utils/formatDate";
-import { rememberPublishedTrip } from "../../utils/myTrips";
 
 function OfferRide() {
   const { user } = useAuth();
@@ -98,7 +97,6 @@ function OfferRide() {
         fare_per_seat: Number(fare) || route.fare_per_seat,
         available_seats: Number(seats),
       });
-      rememberPublishedTrip(trip.trip_id || trip.id);
       setPublished(trip);
     } catch (err) {
       setSubmitError(err.message || "Could not publish this ride");

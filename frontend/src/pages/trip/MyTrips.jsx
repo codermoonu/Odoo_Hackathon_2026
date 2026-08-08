@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { MapPin, ArrowRight, Play, CheckCircle2, XCircle, Route as RouteIcon } from "lucide-react";
 import AppShell from "../../components/ui/AppShell";
 import Card from "../../components/ui/Card";
 import Badge from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import { useAuth } from "../../hooks/useAuth";
 import { getAllTrips, updateTripStatus } from "../../services/trip";
-import { getPublishedTripIds } from "../../utils/myTrips";
 import { formatCurrency, formatDateTime } from "../../utils/formatDate";
 
 const STATUS_TONE = {
@@ -22,13 +22,12 @@ const TABS = [
 ];
 
 function MyTrips() {
+  const { user } = useAuth();
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [tab, setTab] = useState("mine");
   const [updatingId, setUpdatingId] = useState(null);
-
-  const myIds = useMemo(() => new Set(getPublishedTripIds()), []);
 
   function load() {
     getAllTrips()
@@ -42,7 +41,7 @@ function MyTrips() {
   }, []);
 
   const visible = [...trips]
-    .filter((t) => (tab === "mine" ? myIds.has(t.trip_id || t.id) : true))
+    .filter((t) => (tab === "mine" ? t.driver && String(t.driver) === String(user?.id) : true))
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
   async function handleStatusChange(trip, status) {
