@@ -33,7 +33,8 @@ function AvailableRides() {
   const [loadError, setLoadError] = useState("");
   const [view, setView] = useState("list"); // "list" | "map"
   const [hoveredTripId, setHoveredTripId] = useState(null);
-const { coords, status, error, requestLocation } = useCurrentLocation();
+  const { status, error, requestLocation } = useCurrentLocation();
+
   useEffect(() => {
     let active = true;
     getAllTrips()

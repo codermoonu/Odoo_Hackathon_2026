@@ -98,45 +98,6 @@ function handleTrackingSockets(socket, io) {
     }
   });
 
- // Handle Driver Live Location Update
-  socket.on('driver_location_update', async (data) => {
-    try {
-      const { trip_id, lat, lng, speed, heading } = typeof data === 'string' ? JSON.parse(data) : data;
-      if (!trip_id || lat === undefined || lng === undefined) return;
-
-      // Update location record in tracking service
-      const updatedState = trackingService.updateLocation(trip_id, {
-        lat: parseFloat(lat),
-        lng: parseFloat(lng),
-        speed: parseFloat(speed || 0),
-        heading: parseFloat(heading || 0)
-      });
-
-      const broadcastPayload = {
-        event: 'live_location_update',
-        trip_id,
-        location: updatedState.current_location,
-        status: updatedState.status,
-        updated_at: new Date().toISOString()
-      };
-
-      const roomName = `trip_${trip_id}`;
-
-      // Broadcast to room if Socket.io or iterate if WebSocket server
-      if (io && io.to) {
-        io.to(roomName).emit('live_location_update', broadcastPayload);
-      } else if (io && io.clients) {
-        io.clients.forEach(client => {
-          if (client.tripId === trip_id && client.readyState === 1) { // 1 = OPEN
-            client.send(JSON.stringify(broadcastPayload));
-          }
-        });
-      }
-    } catch (err) {
-      console.error('[TrackingSocket] Error updating driver location:', err.message);
-    }
-  });
-
   // Handle Trip Status Change (e.g. STARTED -> COMPLETED)
   socket.on('trip_status_change', async (data) => {
     try {
