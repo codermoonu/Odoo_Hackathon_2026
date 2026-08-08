@@ -41,15 +41,28 @@ function haversineKm(a, b) {
   return +(R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s))).toFixed(2);
 }
 
-// Straight-line GeoJSON stub — good enough for display; swap for a real
-// OSRM call later if you want the seeded routes to hug actual roads.
-function straightLineGeometry(start, dest) {
+// Straight-line GeoJSON stub, broken into several intermediate points —
+// good enough for display, and the extra points give LiveTracking's demo
+// animation something to step through instead of one big jump. Swap for a
+// real OSRM call later if you want the seeded routes to hug actual roads.
+function straightLineGeometry(start, dest, steps = 10) {
+  const coordinates = [];
+  for (let i = 0; i <= steps; i++) {
+    const fraction = i / steps;
+    coordinates.push([
+      start.lng + (dest.lng - start.lng) * fraction,
+      start.lat + (dest.lat - start.lat) * fraction,
+    ]);
+  }
+  return { type: "LineString", coordinates };
+}
+
+// Interpolate a point partway along a route — used to fake a driver's
+// "current" position for IN_PROGRESS trips.
+function pointAlongRoute(start, dest, fraction) {
   return {
-    type: "LineString",
-    coordinates: [
-      [start.lng, start.lat],
-      [dest.lng, dest.lat],
-    ],
+    lat: start.lat + (dest.lat - start.lat) * fraction,
+    lng: start.lng + (dest.lng - start.lng) * fraction,
   };
 }
 
@@ -148,56 +161,83 @@ async function main() {
   console.log(`[seed] created ${vehicles.length} vehicles`);
 
   // 4. Rides + Trips — same route data written to both collections.
-  //    Common South Kolkata -> office-hub commute pairs.
-  const routePlan = [
-    { start: LOCATIONS.jadavpur, dest: LOCATIONS.scienceCity },
-    { start: LOCATIONS.ballygunge, dest: LOCATIONS.saltLake },
-    { start: LOCATIONS.gariahat, dest: LOCATIONS.rajarhat },
-    { start: LOCATIONS.garia, dest: LOCATIONS.parkCircus },
+  //    An explicit list (not a generic loop) so each trip's purpose in
+  //    testing is obvious: which ones are "live" for Live Tracking, which
+  //    are payable in Find a Ride, and which cover the other My Trips states.
+  const now = new Date();
+
+  // Trip status -> Ride status (Ride's enum spells these differently).
+  const RIDE_STATUS = {
+    PUBLISHED: "Published",
+    STARTED: "InProgress",
+    IN_PROGRESS: "InProgress",
+    COMPLETED: "Completed",
+    CANCELLED: "Cancelled",
+  };
+
+  const tripPlan = [
+    // Two live trips, happening right now — join their rooms from
+    // LiveTracking.jsx and they already have a current_location partway
+    // along the route, so the map isn't empty even before any real/demo
+    // socket update arrives.
+    { start: "jadavpur", dest: "scienceCity", driverIndex: 0, status: "IN_PROGRESS", dayOffset: 0, progress: 0.4 },
+    { start: "ballygunge", dest: "saltLake", driverIndex: 1, status: "IN_PROGRESS", dayOffset: 0, progress: 0.65 },
+
+    // Bookable now — the bread-and-butter Find a Ride / Available Rides /
+    // Payment test cases.
+    { start: "gariahat", dest: "rajarhat", driverIndex: 2, status: "PUBLISHED", dayOffset: 0 },
+    { start: "garia", dest: "parkCircus", driverIndex: 3, status: "PUBLISHED", dayOffset: 0 },
+    { start: "jadavpur", dest: "ballygunge", driverIndex: 0, status: "PUBLISHED", dayOffset: 1 },
+    { start: "saltLake", dest: "scienceCity", driverIndex: 1, status: "PUBLISHED", dayOffset: 1 },
+
+    // Full — exercises the disabled "Full" button state on Available Rides.
+    { start: "scienceCity", dest: "saltLake", driverIndex: 2, status: "PUBLISHED", dayOffset: 2, seatsOverride: 0 },
+
+    // Already finished — shows up in My Trips history for its driver.
+    { start: "parkCircus", dest: "gariahat", driverIndex: 3, status: "COMPLETED", dayOffset: -1, progress: 1 },
+
+    // Cancelled — the other My Trips status worth being able to see.
+    { start: "rajarhat", dest: "garia", driverIndex: 0, status: "CANCELLED", dayOffset: 1 },
   ];
 
-  const now = new Date();
   const tripDocs = [];
   const rideDocs = [];
 
-  // Interpolate a point partway along a route — used to fake a driver's
-  // "current" position for IN_PROGRESS trips.
-  function pointAlongRoute(start, dest, fraction) {
-    return {
-      lat: start.lat + (dest.lat - start.lat) * fraction,
-      lng: start.lng + (dest.lng - start.lng) * fraction,
-    };
-  }
-
-  for (let i = 0; i < vehicles.length; i++) {
-    const { vehicle, driver } = vehicles[i];
-    const route = routePlan[i % routePlan.length];
-    const distanceKm = haversineKm(route.start, route.dest);
+  for (let i = 0; i < tripPlan.length; i++) {
+    const plan = tripPlan[i];
+    const { vehicle, driver } = vehicles[plan.driverIndex];
+    const start = LOCATIONS[plan.start];
+    const dest = LOCATIONS[plan.dest];
+    const distanceKm = haversineKm(start, dest);
     const durationMins = Math.round((distanceKm / 30) * 60); // assume ~30km/h city avg
     const farePerSeat = Math.round(20 + distanceKm * 8.5); // matches config/maps.js FARE_CONFIG
 
-    // First 2 vehicles become live "IN_PROGRESS" trips for socket testing;
-    // the rest stay PUBLISHED, spread over the next few days.
-    const isLive = i < 2;
     const travelDate = new Date(now);
-    if (!isLive) travelDate.setDate(now.getDate() + (i + 1));
-    // Live trips are "happening now" — travelDate stays as `now`.
-    // Trip (what AvailableRides.jsx / getAllTrips() actually reads)
-    // Trip (what AvailableRides.jsx / getAllTrips() actually reads)
+    travelDate.setDate(now.getDate() + plan.dayOffset);
+
+    const currentLocation =
+      plan.progress === undefined
+        ? { lat: start.lat, lng: start.lng }
+        : pointAlongRoute(start, dest, plan.progress);
+
+    const availableSeats = plan.seatsOverride ?? vehicle.seatingCapacity - 1;
+
+    // Trip (what FindRide/AvailableRides/Payment/LiveTracking actually read)
     const trip = await Trip.create({
       trip_id: `SEED-TRIP-${String(i + 1).padStart(3, "0")}`,
+      driver: driver.user._id,
       driver_name: driver.user.name,
       vehicle: `${vehicle.make} ${vehicle.model}`,
-      start_address: route.start.address,
-      start_coords: { lat: route.start.lat, lng: route.start.lng },
-      dest_address: route.dest.address,
-      dest_coords: { lat: route.dest.lat, lng: route.dest.lng },
-      route_geometry: straightLineGeometry(route.start, route.dest),
+      start_address: start.address,
+      start_coords: { lat: start.lat, lng: start.lng },
+      dest_address: dest.address,
+      dest_coords: { lat: dest.lat, lng: dest.lng },
+      route_geometry: straightLineGeometry(start, dest),
       distance_km: distanceKm,
       duration_mins: durationMins,
       fare_per_seat: farePerSeat,
-      available_seats: vehicle.seatingCapacity - 1,
-      status,
+      available_seats: availableSeats,
+      status: plan.status,
       current_location: currentLocation,
     });
     // Mongoose only auto-sets createdAt if not supplied — override it after
@@ -211,27 +251,29 @@ async function main() {
     trip.createdAt = travelDate;
     tripDocs.push(trip);
 
-   // Ride (what rideController.js / searchRides reads) — same travelDate
+    // Ride (what the legacy rideController.js / bookRide flow reads) — same travelDate
     const ride = await Ride.create({
       driver: driver.user._id,
       organization: org._id,
       vehicle: vehicle._id,
-      pickupLocation: route.start.address,
-      pickupLat: route.start.lat,
-      pickupLng: route.start.lng,
-      destination: route.dest.address,
-      destinationLat: route.dest.lat,
-      destinationLng: route.dest.lng,
+      pickupLocation: start.address,
+      pickupLat: start.lat,
+      pickupLng: start.lng,
+      destination: dest.address,
+      destinationLat: dest.lat,
+      destinationLng: dest.lng,
       travelDate,
       travelTime: "08:30 AM",
-      availableSeats: vehicle.seatingCapacity - 1,
+      availableSeats,
       farePerSeat,
-      status: isLive ? "InProgress" : "Published",
+      status: availableSeats === 0 ? "FullyBooked" : RIDE_STATUS[plan.status],
     });
     rideDocs.push(ride);
   }
 
-  console.log(`[seed] created ${tripDocs.length} trips (${tripDocs.filter(t => t.status === "IN_PROGRESS").length} IN_PROGRESS) and ${rideDocs.length} rides`);
+  console.log(
+    `[seed] created ${tripDocs.length} trips (${tripDocs.filter((t) => t.status === "IN_PROGRESS").length} IN_PROGRESS, ${tripDocs.filter((t) => t.status === "PUBLISHED").length} PUBLISHED, ${tripDocs.filter((t) => t.status === "COMPLETED").length} COMPLETED, ${tripDocs.filter((t) => t.status === "CANCELLED").length} CANCELLED) and ${rideDocs.length} rides`
+  );
 
   console.log("\n=== Seeded login credentials (all use the same password) ===");
   console.log(`Password: ${SEED_PASSWORD}\n`);
