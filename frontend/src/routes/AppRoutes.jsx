@@ -6,6 +6,7 @@ import Splash from "../pages/Splash";
 import Landing from "../pages/Landing";
 import Login from "../pages/auth/Login";
 import Signup from "../pages/auth/Signup";
+
 import Dashboard from "../pages/dashboard/Dashboard";
 import FindRide from "../pages/ride/FindRide";
 import OfferRide from "../pages/ride/OfferRide";
@@ -22,28 +23,59 @@ import SavedPlaces from "../pages/settings/SavedPlaces";
 import HelpSupport from "../pages/settings/HelpSupport";
 import RideHistory from "../pages/history/RideHistory";
 import ProfileCreation from "../pages/onboarding/ProfileCreation";
+
+// Admin
+import AdminLogin from "../pages/admin/AdminLogin";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import ManageEmployees from "../pages/admin/ManageEmployees";
 import ManageVehicles from "../pages/admin/ManageVehicles";
 import OrgSettings from "../pages/admin/OrgSettings";
+
 import ReportsDashboard from "../pages/reports/ReportsDashboard";
 
 function SplashRoute() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  return <Splash onComplete={() => navigate(isAuthenticated ? "/dashboard" : "/landing", { replace: true })} />;
+
+  return (
+    <Splash
+      onComplete={() =>
+        navigate(
+          isAuthenticated ? "/dashboard" : "/landing",
+          { replace: true }
+        )
+      }
+    />
+  );
 }
 
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public */}
+
+      {/* =========================
+          PUBLIC ROUTES
+      ========================== */}
+
       <Route path="/" element={<SplashRoute />} />
+
       <Route path="/landing" element={<Landing />} />
+
       <Route path="/login" element={<Login />} />
+
       <Route path="/signup" element={<Signup />} />
 
-      {/* Core rider journey */}
+      {/* ADMIN LOGIN */}
+      <Route
+        path="/admin/login"
+        element={<AdminLogin />}
+      />
+
+
+      {/* =========================
+          CORE RIDER JOURNEY
+      ========================== */}
+
       <Route
         path="/dashboard"
         element={
@@ -52,6 +84,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/rides/find"
         element={
@@ -60,6 +93,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/rides/available"
         element={
@@ -68,6 +102,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/rides/offer"
         element={
@@ -76,6 +111,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/vehicle"
         element={
@@ -84,6 +120,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/trips"
         element={
@@ -92,6 +129,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/wallet"
         element={
@@ -100,6 +138,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/settings"
         element={
@@ -109,7 +148,11 @@ function AppRoutes() {
         }
       />
 
-      {/* Placeholder pages — real routes, coming-soon UI, so nothing 404s */}
+
+      {/* =========================
+          TRIP / RIDE DETAILS
+      ========================== */}
+
       <Route
         path="/rides/route-confirmation"
         element={
@@ -118,6 +161,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/trips/:id"
         element={
@@ -126,6 +170,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/trips/:id/live"
         element={
@@ -134,6 +179,12 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
+
+      {/* =========================
+          SETTINGS
+      ========================== */}
+
       <Route
         path="/settings/saved-places"
         element={
@@ -142,6 +193,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/settings/help"
         element={
@@ -150,6 +202,12 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
+
+      {/* =========================
+          HISTORY / ONBOARDING
+      ========================== */}
+
       <Route
         path="/history"
         element={
@@ -158,6 +216,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/onboarding"
         element={
@@ -166,48 +225,67 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
+
+      {/* =========================
+          ADMIN PANEL
+      ========================== */}
+
       <Route
         path="/admin"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute adminOnly>
             <AdminDashboard />
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/admin/employees"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute adminOnly>
             <ManageEmployees />
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/admin/vehicles"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute adminOnly>
             <ManageVehicles />
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/admin/settings"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute adminOnly>
             <OrgSettings />
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/admin/reports"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute adminOnly>
             <ReportsDashboard />
           </ProtectedRoute>
         }
       />
 
-      <Route path="*" element={<Navigate to="/landing" replace />} />
+
+      {/* =========================
+          FALLBACK
+      ========================== */}
+
+      <Route
+        path="*"
+        element={<Navigate to="/landing" replace />}
+      />
+
     </Routes>
   );
 }
