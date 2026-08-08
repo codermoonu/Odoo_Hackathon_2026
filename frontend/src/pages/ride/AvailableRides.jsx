@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { MapPin, ArrowRight, Users, Fuel, CheckCircle2, SearchX } from "lucide-react";
+import { MapPin, ArrowRight, Users, Fuel, CheckCircle2, SearchX, List, Map as MapIcon } from "lucide-react";
 import AppShell from "../../components/ui/AppShell";
 import Card from "../../components/ui/Card";
 import Badge from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
+import TripsMap from "../../components/map/TripsMap";
 import { getAllTrips } from "../../services/trip";
 import { formatCurrency, formatDateTime } from "../../utils/formatDate";
 
@@ -29,6 +30,8 @@ function AvailableRides() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [requested, setRequested] = useState({});
+  const [view, setView] = useState("list"); // "list" | "map"
+  const [hoveredTripId, setHoveredTripId] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -61,26 +64,49 @@ function AvailableRides() {
 
   return (
     <AppShell title="Available Rides">
-      {(pickup || destination) && (
-        <p className="mb-6 flex flex-wrap items-center gap-1.5 text-sm text-text-dim">
-          Showing rides
-          {pickup && (
-            <>
-              {" "}
-              from <span className="font-semibold text-text">{pickup}</span>
-            </>
-          )}
-          {destination && (
-            <>
-              {" "}
-              to <span className="font-semibold text-text">{destination}</span>
-            </>
-          )}
-          <Link to="/rides/find" className="ml-1 font-semibold text-violet-400 hover:text-violet-300">
-            Change search
-          </Link>
-        </p>
-      )}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        {(pickup || destination) && (
+          <p className="flex flex-wrap items-center gap-1.5 text-sm text-text-dim">
+            Showing rides
+            {pickup && (
+              <>
+                {" "}
+                from <span className="font-semibold text-text">{pickup}</span>
+              </>
+            )}
+            {destination && (
+              <>
+                {" "}
+                to <span className="font-semibold text-text">{destination}</span>
+              </>
+            )}
+            <Link to="/rides/find" className="ml-1 font-semibold text-violet-400 hover:text-violet-300">
+              Change search
+            </Link>
+          </p>
+        )}
+
+        <div className="flex items-center gap-1 rounded-xl border border-border bg-surface-alt/60 p-1">
+          <button
+            type="button"
+            onClick={() => setView("list")}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+              view === "list" ? "bg-violet-500/20 text-violet-300" : "text-text-faint hover:text-text-dim"
+            }`}
+          >
+            <List size={13} /> List
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("map")}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+              view === "map" ? "bg-violet-500/20 text-violet-300" : "text-text-faint hover:text-text-dim"
+            }`}
+          >
+            <MapIcon size={13} /> Map
+          </button>
+        </div>
+      </div>
 
       {loading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -101,6 +127,10 @@ function AvailableRides() {
             Be the first to offer one
           </Link>
         </Card>
+      ) : view === "map" ? (
+        <Card className="h-[600px] overflow-hidden p-0">
+          <TripsMap trips={filtered} activeTripId={hoveredTripId} />
+        </Card>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {filtered.map((trip) => {
@@ -108,7 +138,12 @@ function AvailableRides() {
             const isRequested = !!requested[key];
             const seats = Math.max((trip.available_seats || 0) - (isRequested ? 1 : 0), 0);
             return (
-              <Card key={key} className="flex flex-col gap-4 p-5">
+              <Card
+                key={key}
+                className="flex flex-col gap-4 p-5"
+                onMouseEnter={() => setHoveredTripId(key)}
+                onMouseLeave={() => setHoveredTripId(null)}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="flex items-center gap-1.5 truncate text-sm font-semibold">

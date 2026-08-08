@@ -5,7 +5,7 @@ const Vehicle = require("../models/Vehicle");
 // Publish a new ride (Offer a Ride)
 const publishRide = async (req, res) => {
   try {
-    const { pickupLocation, destination, travelDate, travelTime, availableSeats, farePerSeat, vehicleId, organization } = req.body;
+    const { pickupLocation, destination, travelDate, travelTime, availableSeats, farePerSeat, vehicleId, organization, pickupLat, pickupLng,  destLat, destLng,} = req.body;
 
     if (!pickupLocation || !destination || !travelDate || !travelTime || !availableSeats || !farePerSeat || !vehicleId) {
       return res.status(400).json({ message: "All ride details including vehicleId are required." });
@@ -30,7 +30,7 @@ const publishRide = async (req, res) => {
       travelDate,
       travelTime,
       availableSeats,
-      farePerSeat,
+      farePerSeat,pickupLat, pickupLng,  destLat, destLng,
       status: "Published" // e.g., Published, FullyBooked, Cancelled
     });
 

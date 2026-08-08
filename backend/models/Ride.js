@@ -18,11 +18,15 @@ const rideSchema = new mongoose.Schema({
   pickupLocation: { 
     type: String, 
     required: true 
-  },
+  },pickupLat: { type: Number },
+  pickupLng: { type: Number },
+
   destination: { 
     type: String, 
     required: true 
   },
+  destinationLat: { type: Number },
+  destinationLng: { type: Number },
   travelDate: { 
     type: Date, 
     required: true 
