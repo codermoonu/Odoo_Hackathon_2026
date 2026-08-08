@@ -14,8 +14,7 @@ app.get('/', (req, res) => {
   res.send('API running');
 });
 
-// mount routes here later, e.g.:
-// app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api', require('./routes'));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
