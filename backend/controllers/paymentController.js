@@ -6,6 +6,20 @@ const Payment = require("../models/Payment");
 // Razorpay SDK rejects with a plain { statusCode, error: { description } } object, not an Error.
 const getErrorMessage = (error) => error?.error?.description || error?.message || "Something went wrong";
 
+// Wallet balance = paid top-ups minus everything ever paid *from* the
+// wallet (method: "wallet"), regardless of purpose. Top-ups always come in
+// via Razorpay, so they never double as a wallet-method spend themselves.
+const getWalletBalance = async (userId) => {
+  const payments = await Payment.find({ user: userId, status: "paid" }).select("amount purpose method");
+  const topUps = payments
+    .filter((p) => p.purpose === "wallet_topup")
+    .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  const spent = payments
+    .filter((p) => p.method === "wallet")
+    .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  return topUps - spent;
+};
+
 const createOrder = async (req, res) => {
   try {
     const { amount, currency, purpose, tripId, notes } = req.body;
@@ -88,6 +102,48 @@ const verifyPayment = async (req, res) => {
   }
 };
 
+const payWithWallet = async (req, res) => {
+  try {
+    const { amount, purpose, tripId, notes } = req.body;
+
+    if (!amount || Number(amount) <= 0) {
+      return res.status(400).json({ message: "A positive amount is required" });
+    }
+    if (tripId && !mongoose.Types.ObjectId.isValid(tripId)) {
+      return res.status(400).json({ message: "Invalid tripId" });
+    }
+
+    const balance = await getWalletBalance(req.user._id);
+    if (balance < Number(amount)) {
+      return res.status(400).json({ message: "Insufficient wallet balance" });
+    }
+
+    const payment = await Payment.create({
+      user: req.user._id,
+      trip: tripId || undefined,
+      method: "wallet",
+      amount: Number(amount),
+      currency: "INR",
+      purpose: purpose || "other",
+      notes: notes || {},
+      status: "paid",
+    });
+
+    res.status(201).json({ payment, balance: balance - Number(amount) });
+  } catch (error) {
+    res.status(500).json({ message: getErrorMessage(error) });
+  }
+};
+
+const getWalletBalanceHandler = async (req, res) => {
+  try {
+    const balance = await getWalletBalance(req.user._id);
+    res.status(200).json({ balance });
+  } catch (error) {
+    res.status(500).json({ message: getErrorMessage(error) });
+  }
+};
+
 const getMyPayments = async (req, res) => {
   try {
     const payments = await Payment.find({ user: req.user._id }).sort({ createdAt: -1 });
@@ -157,6 +213,8 @@ const razorpayWebhook = async (req, res) => {
 module.exports = {
   createOrder,
   verifyPayment,
+  payWithWallet,
+  getWalletBalanceHandler,
   getMyPayments,
   getPaymentById,
   razorpayWebhook,

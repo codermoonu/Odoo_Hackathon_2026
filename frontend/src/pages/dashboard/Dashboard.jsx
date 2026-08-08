@@ -9,7 +9,7 @@ import { assets } from "../../assets/assets";
 import { getVehicles } from "../../services/vehicle";
 import { getMyPayments } from "../../services/payment";
 import { getAllTrips } from "../../services/trip";
-import { PAYMENT_PURPOSE } from "../../utils/constants";
+import { computeWalletBalance } from "../../utils/wallet";
 import { formatCurrency, formatDateTime } from "../../utils/formatDate";
 
 const QUICK_ACTIONS = [
@@ -51,9 +51,7 @@ function Dashboard() {
     };
   }, []);
 
-  const balance = payments
-    .filter((p) => p.status === "paid" && p.purpose === PAYMENT_PURPOSE.walletTopup)
-    .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  const balance = computeWalletBalance(payments);
 
   const recentTrips = [...trips]
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
