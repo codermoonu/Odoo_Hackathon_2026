@@ -85,7 +85,7 @@ function OrgSettings() {
       <div className="space-y-6">
 
         <div>
-          <p className="text-sm text-violet-400">Administration</p>
+          <p className="text-sm text-violet-700">Administration</p>
           <h1 className="font-display text-3xl font-bold">Organization Settings</h1>
           <p className="mt-1 text-sm text-text-dim">
             Configure fuel cost, efficiency and fare calculation for your organization.
@@ -94,7 +94,7 @@ function OrgSettings() {
 
         {error && (
           <Card className="border-red-500/30 p-4">
-            <p className="text-sm text-red-400">{error}</p>
+            <p className="text-sm text-red-700">{error}</p>
           </Card>
         )}
 
@@ -106,7 +106,7 @@ function OrgSettings() {
           <Card className="p-5">
             <div className="mb-5 flex items-center gap-3">
               <div className="rounded-xl bg-violet-500/10 p-3">
-                <Building2 size={22} className="text-violet-400" />
+                <Building2 size={22} className="text-violet-700" />
               </div>
               <div>
                 <h2 className="font-display font-bold">{organization?.name || "Organization"}</h2>

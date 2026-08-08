@@ -54,7 +54,7 @@ function AdminShell({ children, title, actions }) {
               <span className="font-display text-lg font-bold tracking-tight">
                 WAYFLOW
               </span>
-              <span className="flex items-center gap-1 text-[11px] font-semibold text-violet-400">
+              <span className="flex items-center gap-1 text-[11px] font-semibold text-violet-700">
                 <ShieldCheck size={11} />
                 Admin
               </span>

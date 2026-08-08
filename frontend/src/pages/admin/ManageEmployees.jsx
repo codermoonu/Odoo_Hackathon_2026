@@ -108,7 +108,7 @@ function ManageEmployees() {
 
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-violet-400">Administration</p>
+            <p className="text-sm text-violet-700">Administration</p>
             <h1 className="font-display text-3xl font-bold">Employees</h1>
             <p className="mt-1 text-sm text-text-dim">
               Add employees and manage their platform access.
@@ -123,7 +123,7 @@ function ManageEmployees() {
 
         {error && (
           <Card className="border-red-500/30 p-4">
-            <p className="text-sm text-red-400">{error}</p>
+            <p className="text-sm text-red-700">{error}</p>
           </Card>
         )}
 

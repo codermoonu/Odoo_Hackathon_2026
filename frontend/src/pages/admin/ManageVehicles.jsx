@@ -33,7 +33,7 @@ function ManageVehicles() {
       <div className="space-y-6">
 
         <div>
-          <p className="text-sm text-violet-400">Administration</p>
+          <p className="text-sm text-violet-700">Administration</p>
           <h1 className="font-display text-3xl font-bold">Vehicles</h1>
           <p className="mt-1 text-sm text-text-dim">
             Oversee registered vehicles across your organization.
@@ -42,7 +42,7 @@ function ManageVehicles() {
 
         {error && (
           <Card className="border-red-500/30 p-4">
-            <p className="text-sm text-red-400">{error}</p>
+            <p className="text-sm text-red-700">{error}</p>
           </Card>
         )}
 
