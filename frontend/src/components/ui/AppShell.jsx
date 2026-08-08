@@ -21,7 +21,7 @@ const NAV_ITEMS = [
   { to: "/rides/offer", label: "Offer a Ride", icon: Navigation },
   { to: "/vehicle", label: "My Vehicle", icon: Car },
   { to: "/trips", label: "My Trips", icon: RouteIcon },
-  { to: "/wallet", label: "Wallet", icon: WalletIcon },
+  { to: "/wallet", label: "Payments", icon: WalletIcon },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 

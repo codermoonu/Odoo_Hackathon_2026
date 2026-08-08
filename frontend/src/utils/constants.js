@@ -16,3 +16,6 @@ export const PAYMENT_STATUS_LABEL = {
 };
 
 export const RAZORPAY_CHECKOUT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
+
+// Same number used on the Help & Support "Emergency Help" contact.
+export const SUPPORT_PHONE = "+919999999999";
