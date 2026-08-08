@@ -1,17 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const { 
-    bookRide, 
-    getMyBookings 
-} = require("../controllers/bookingController");
 const protect = require("../middlewares/userMiddleware");
+const { bookRide, getMyBookings } = require("../controllers/bookingController");
 
 router.use(protect);
-
-router.route("/")
-  .post(bookRide);
-
-router.route("/my-bookings")
-  .get(getMyBookings);
+router.post("/", bookRide);
+router.get("/mine", getMyBookings);
 
 module.exports = router;

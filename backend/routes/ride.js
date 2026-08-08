@@ -1,19 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const { 
-    publishRide, 
-    searchRides, 
-    getRideById 
-} = require("../controllers/rideController");
 const protect = require("../middlewares/userMiddleware");
+const { publishRide, searchRides, getRideById } = require("../controllers/rideController");
 
 router.use(protect);
-
-router.route("/")
-  .post(publishRide) // Offer a Ride
-  .get(searchRides); // Find a Ride
-
-router.route("/:id")
-  .get(getRideById);
+router.post("/", publishRide);
+router.get("/search", searchRides);
+router.get("/:id", getRideById);
 
 module.exports = router;

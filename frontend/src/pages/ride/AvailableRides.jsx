@@ -1,34 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
-import { MapPin, ArrowRight, Users, Fuel, SearchX, List, Map as MapIcon, CreditCard } from "lucide-react";
+import { MapPin, ArrowRight, Users, CreditCard, SearchX, List, Map as MapIcon } from "lucide-react";
 import AppShell from "../../components/ui/AppShell";
 import Card from "../../components/ui/Card";
-import Badge from "../../components/ui/Badge";
 import Button from "../../components/ui/Button";
 import TripsMap from "../../components/map/TripsMap";
-import { getAllTrips } from "../../services/trip";
+import { searchRides } from "../../services/ride";
+import { bookRide } from "../../services/booking";
 import { formatCurrency, formatDateTime } from "../../utils/formatDate";
-import { getAvailableSeats, getSeatStatusLabel } from "../../utils/seat";
+import { getAvailableSeats, getSeatStatusLabel, getSeatUrgency, SEAT_URGENCY_STYLES } from "../../utils/seat";
 import { useCurrentLocation } from "../../hooks/useCurrentLocation";
-const STATUS_TONE = {
-  PUBLISHED: "success",
-  STARTED: "violet",
-  COMPLETED: "neutral",
-  CANCELLED: "danger",
-};
-
-// Geocoded addresses vary in how much admin hierarchy they include
-// ("Jadavpur, Kolkata, West Bengal, India" vs "Jadavpur, Kolkata,
-// Kolkata Metropolitan Area, Kolkata, West Bengal, India" for the same
-// place), so a plain substring check in either direction is too brittle.
-// Match on the query's first (most specific) segment instead — that's
-// the actual place name the rider searched for.
-function matches(text, query) {
-  if (!query) return true;
-  const primaryTerm = query.split(",")[0].trim().toLowerCase();
-  if (!primaryTerm) return true;
-  return (text || "").toLowerCase().includes(primaryTerm);
-}
 
 function AvailableRides() {
   const [searchParams] = useSearchParams();
@@ -36,18 +17,21 @@ function AvailableRides() {
   const pickup = searchParams.get("pickup") || "";
   const destination = searchParams.get("destination") || "";
 
-  const [trips, setTrips] = useState([]);
+  const [rides, setRides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
-  const [view, setView] = useState("list"); // "list" | "map"
-  const [hoveredTripId, setHoveredTripId] = useState(null);
-  const { status, error, requestLocation } = useCurrentLocation();
+  const [bookingId, setBookingId] = useState(null); // ride._id currently being booked (loading state)
+  const [bookErrors, setBookErrors] = useState({});
+  const [view, setView] = useState("list");
+  const [hoveredRideId, setHoveredRideId] = useState(null);
+  const { status: locationStatus, error: locationError, requestLocation } = useCurrentLocation();
 
   useEffect(() => {
     let active = true;
-    getAllTrips()
+    setLoading(true);
+    searchRides({ pickupLocation: pickup, destination })
       .then((data) => {
-        if (active) setTrips(data);
+        if (active) setRides(data);
       })
       .catch((err) => {
         if (active) setLoadError(err.message || "Could not load rides");
@@ -58,19 +42,42 @@ function AvailableRides() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [pickup, destination]);
 
-  const filtered = useMemo(
-    () =>
-      trips.filter(
-        (t) => matches(t.start_address, pickup) && matches(t.dest_address, destination)
-      ),
-    [trips, pickup, destination]
-  );
-
-  function handleRequestSeat(tripKey) {
-    navigate(`/trips/${tripKey}/pay`);
+  async function handleRequestSeat(ride) {
+    setBookingId(ride._id);
+    setBookErrors((e) => ({ ...e, [ride._id]: "" }));
+    try {
+      // Locks the seat atomically (first-come-first-serve guard lives here)
+      // and creates a Booking with paymentStatus: "Pending" before we ever
+      // leave this page — so payment is the *second* step, not the first.
+      const { booking, ride: updatedRide } = await bookRide(ride._id, 1);
+      setRides((current) =>
+        current.map((r) => (r._id === ride._id ? { ...r, availableSeats: updatedRide.availableSeats, status: updatedRide.status } : r))
+      );
+      navigate(`/rides/${ride._id}/pay`, { state: { bookingId: booking._id } });
+    } catch (err) {
+      setBookErrors((e) => ({ ...e, [ride._id]: err.message || "Booking failed" }));
+    } finally {
+      setBookingId(null);
+    }
   }
+
+  const mapRides = useMemo(
+    () =>
+      rides.map((r) => ({
+        trip_id: r._id,
+        driver_name: r.driver?.name,
+        vehicle: r.vehicle ? `${r.vehicle.make} ${r.vehicle.model}` : "",
+        start_address: r.pickupLocation,
+        dest_address: r.destination,
+        pickupLat: r.pickupLat,
+        pickupLng: r.pickupLng,
+        destLat: r.destinationLat,
+        destLng: r.destinationLng,
+      })),
+    [rides]
+  );
 
   return (
     <AppShell title="Available Rides">
@@ -78,70 +85,47 @@ function AvailableRides() {
         {(pickup || destination) && (
           <p className="flex flex-wrap items-center gap-1.5 text-sm text-text-dim">
             Showing rides
-            {pickup && (
-              <>
-                {" "}
-                from <span className="font-semibold text-text">{pickup}</span>
-              </>
-            )}
-            {destination && (
-              <>
-                {" "}
-                to <span className="font-semibold text-text">{destination}</span>
-              </>
-            )}
+            {pickup && <> from <span className="font-semibold text-text">{pickup}</span></>}
+            {destination && <> to <span className="font-semibold text-text">{destination}</span></>}
             <Link to="/rides/find" className="ml-1 font-semibold text-violet-600 hover:text-violet-700">
               Change search
             </Link>
           </p>
         )}
-        {/* NEW: location-permission prompt for "rides near me" */}
-        {status !== "granted" && (
+
+        {locationStatus !== "granted" && (
           <button
             type="button"
             onClick={requestLocation}
-            disabled={status === "requesting"}
+            disabled={locationStatus === "requesting"}
             className="text-sm font-semibold text-violet-600 hover:text-violet-700 disabled:opacity-60"
           >
-            {status === "requesting" ? "Locating…" : "Use my location to find rides nearby"}
+            {locationStatus === "requesting" ? "Locating…" : "Use my location to find rides nearby"}
           </button>
         )}
 
         <div className="flex items-center gap-1 rounded-xl border border-border bg-surface-alt/60 p-1">
-          <button
-            type="button"
-            onClick={() => setView("list")}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-              view === "list" ? "bg-violet-500/20 text-violet-700" : "text-text-faint hover:text-text-dim"
-            }`}
-          >
+          <button type="button" onClick={() => setView("list")} className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${view === "list" ? "bg-violet-500/20 text-violet-700" : "text-text-faint hover:text-text-dim"}`}>
             <List size={13} /> List
           </button>
-          <button
-            type="button"
-            onClick={() => setView("map")}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
-              view === "map" ? "bg-violet-500/20 text-violet-700" : "text-text-faint hover:text-text-dim"
-            }`}
-          >
+          <button type="button" onClick={() => setView("map")} className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${view === "map" ? "bg-violet-500/20 text-violet-700" : "text-text-faint hover:text-text-dim"}`}>
             <MapIcon size={13} /> Map
           </button>
         </div>
       </div>
-       {/* NEW: error message, own line below the header row */}
-      {error && <p className="mb-4 text-xs text-red-500">{error}</p>}
+
+      {locationError && <p className="mb-4 text-xs text-red-500">{locationError}</p>}
+
       {loading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {[0, 1, 2, 3].map((i) => (
-            <Card key={i} className="h-40 animate-pulse" />
-          ))}
+          {[0, 1, 2, 3].map((i) => <Card key={i} className="h-40 animate-pulse" />)}
         </div>
       ) : loadError ? (
         <Card className="flex flex-col items-center gap-3 px-6 py-16 text-center">
           <SearchX size={28} className="text-text-faint" />
           <p className="text-sm text-text-dim">{loadError}</p>
         </Card>
-      ) : filtered.length === 0 ? (
+      ) : rides.length === 0 ? (
         <Card className="flex flex-col items-center gap-3 px-6 py-16 text-center">
           <SearchX size={28} className="text-text-faint" />
           <p className="text-sm text-text-dim">No rides match your search yet.</p>
@@ -151,68 +135,67 @@ function AvailableRides() {
         </Card>
       ) : view === "map" ? (
         <Card className="h-[600px] overflow-hidden p-0">
-          <TripsMap trips={filtered} activeTripId={hoveredTripId} />
+          <TripsMap trips={mapRides} activeTripId={hoveredRideId} />
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {filtered.map((trip) => {
-            const key = trip.trip_id || trip.id;
-            const seats = getAvailableSeats(trip, 0);
+          {rides.map((ride) => {
+            const seatsLeft = getAvailableSeats(ride);
+            const urgency = getSeatUrgency(ride);
+            const isFull = seatsLeft === 0;
+            const bookError = bookErrors[ride._id];
+
             return (
               <Card
-                key={key}
+                key={ride._id}
                 className="flex flex-col gap-4 p-5"
-                onMouseEnter={() => setHoveredTripId(key)}
-                onMouseLeave={() => setHoveredTripId(null)}
+                onMouseEnter={() => setHoveredRideId(ride._id)}
+                onMouseLeave={() => setHoveredRideId(null)}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="flex items-center gap-1.5 truncate text-sm font-semibold">
                       <MapPin size={14} className="shrink-0 text-violet-600" />
-                      {trip.start_address || "Pickup"}
+                      {ride.pickupLocation}
                     </p>
                     <p className="mt-1.5 flex items-center gap-1.5 truncate text-sm font-semibold">
                       <ArrowRight size={14} className="shrink-0 text-text-faint" />
-                      {trip.dest_address || "Destination"}
+                      {ride.destination}
                     </p>
                   </div>
-                  <Badge tone={STATUS_TONE[trip.status] || "neutral"}>{trip.status}</Badge>
+                  <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${SEAT_URGENCY_STYLES[urgency]}`}>
+                    {getSeatStatusLabel(ride)}
+                  </span>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-text-faint">
-                  <span>{trip.driver_name}</span>
+                  <span>{ride.driver?.name}</span>
                   <span>•</span>
-                  <span>{trip.vehicle}</span>
+                  <span>{ride.vehicle ? `${ride.vehicle.make} ${ride.vehicle.model}` : ""}</span>
                   <span>•</span>
-                  <span>{formatDateTime(trip.createdAt)}</span>
+                  <span>{formatDateTime(ride.travelDate)} · {ride.travelTime}</span>
                 </div>
 
                 <div className="flex items-center justify-between border-t border-border pt-4">
-                  <div className="flex items-center gap-4 text-sm text-text-dim">
-                    <span className="flex items-center gap-1.5">
-                      <Users size={15} className="text-violet-600" />
-                      {getSeatStatusLabel(trip, 0)}
-                    </span>
-                    {trip.distance_km != null && (
-                      <span className="flex items-center gap-1.5">
-                        <Fuel size={15} className="text-violet-600" />
-                        {trip.distance_km} km
-                      </span>
-                    )}
-                  </div>
+                  <span className="flex items-center gap-1.5 text-sm text-text-dim">
+                    <Users size={15} className="text-violet-600" />
+                    {ride.availableSeats} seats total
+                  </span>
                   <p className="font-display text-lg font-bold text-violet-700">
-                    {formatCurrency(trip.fare_per_seat)}
+                    {formatCurrency(ride.farePerSeat)}
                   </p>
                 </div>
+
+                {bookError && <p className="text-xs text-red-600">{bookError}</p>}
 
                 <Button
                   variant="secondary"
                   className="w-full justify-center"
-                  disabled={seats === 0}
-                  onClick={() => handleRequestSeat(key)}
+                  disabled={isFull || bookingId === ride._id}
+                  onClick={() => handleRequestSeat(ride)}
                 >
                   <CreditCard size={16} />
-                  {seats === 0 ? "Full" : "Request seat & pay"}
+                  {isFull ? "Full" : bookingId === ride._id ? "Booking…" : "Request seat & pay"}
                 </Button>
               </Card>
             );
