@@ -9,7 +9,7 @@ function ProtectedRoute({ children, adminOnly = false }) {
   if (!isAuthenticated) {
     return (
       <Navigate
-        to="/login"
+        to={adminOnly ? "/admin/login" : "/login"}
         replace
         state={{ from: location.pathname }}
       />

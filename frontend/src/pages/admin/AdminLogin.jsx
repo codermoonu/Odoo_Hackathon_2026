@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Mail,
   Lock,
@@ -19,6 +19,7 @@ import { assets } from "../../assets/assets";
 function AdminLogin() {
   const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [form, setForm] = useState({
     email: "",
@@ -33,12 +34,12 @@ function AdminLogin() {
   useEffect(() => {
     if (isAuthenticated) {
       if (user?.role === "admin") {
-        navigate("/admin", { replace: true });
+        navigate(location.state?.from || "/admin", { replace: true });
       } else {
         navigate("/dashboard", { replace: true });
       }
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, navigate, location.state]);
 
   function update(field, value) {
     setForm((current) => ({
@@ -100,7 +101,7 @@ function AdminLogin() {
         return;
       }
 
-      navigate("/admin", { replace: true });
+      navigate(location.state?.from || "/admin", { replace: true });
     } catch (err) {
       setSubmitError(
         err.message || "Unable to log in as administrator"

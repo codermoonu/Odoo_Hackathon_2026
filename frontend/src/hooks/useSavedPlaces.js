@@ -16,14 +16,17 @@ export function useSavedPlaces() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-      setPlaces(saved.length ? saved : defaultPlaces);
-    } catch {
-      setPlaces(defaultPlaces);
-    } finally {
-      setLoading(false);
+    function loadPlaces() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+        setPlaces(saved.length ? saved : defaultPlaces);
+      } catch {
+        setPlaces(defaultPlaces);
+      } finally {
+        setLoading(false);
+      }
     }
+    loadPlaces();
   }, []);
 
   useEffect(() => {

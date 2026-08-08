@@ -206,6 +206,18 @@ async function main() {
 
     // Cancelled — the other My Trips status worth being able to see.
     { start: "rajarhat", dest: "garia", driverIndex: 0, status: "CANCELLED", dayOffset: 1 },
+
+    // Historical completed trips spread across the last several months —
+    // without these every trip lands in the current month, which leaves
+    // the Reports page's month-by-month fuel efficiency and financial
+    // summary with only one data point to show.
+    { start: "jadavpur", dest: "parkCircus", driverIndex: 1, status: "COMPLETED", dayOffset: -150, progress: 1 },
+    { start: "ballygunge", dest: "rajarhat", driverIndex: 2, status: "COMPLETED", dayOffset: -120, progress: 1 },
+    { start: "garia", dest: "scienceCity", driverIndex: 3, status: "COMPLETED", dayOffset: -92, progress: 1 },
+    { start: "gariahat", dest: "saltLake", driverIndex: 0, status: "COMPLETED", dayOffset: -85, progress: 1 },
+    { start: "jadavpur", dest: "rajarhat", driverIndex: 2, status: "COMPLETED", dayOffset: -60, progress: 1 },
+    { start: "ballygunge", dest: "parkCircus", driverIndex: 3, status: "COMPLETED", dayOffset: -30, progress: 1 },
+    { start: "scienceCity", dest: "garia", driverIndex: 1, status: "COMPLETED", dayOffset: -25, progress: 1 },
   ];
 
   const tripDocs = [];
@@ -248,14 +260,12 @@ async function main() {
       status: plan.status,
       current_location: currentLocation,
     });
-    // Mongoose only auto-sets createdAt if not supplied — override it after
-    // creation so it matches travelDate exactly (create() with an explicit
-    // createdAt in the doc body is unreliable across mongoose versions).
-    await Trip.updateOne(
-      { _id: trip._id },
-      { $set: { createdAt: travelDate } },
-      { timestamps: false }
-    );
+    // Override createdAt after creation so it matches travelDate exactly.
+    // Mongoose's timestamps middleware silently strips createdAt from
+    // Model.updateOne() $set payloads (and `{ timestamps: false }` isn't
+    // honored by this mongoose version — it just makes the write fail with
+    // acknowledged:false) — going through the native driver bypasses that.
+    await Trip.collection.updateOne({ _id: trip._id }, { $set: { createdAt: travelDate } });
     trip.createdAt = travelDate;
     tripDocs.push(trip);
 
