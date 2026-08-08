@@ -100,6 +100,11 @@ async function main() {
     throw new Error(`${adminEmail} doesn't belong to an organization yet — create one from the admin panel first.`);
   }
   const orgId = admin.organization;
+  // email and registrationNumber are both globally unique (not scoped per
+  // org), so running this for a second org can otherwise collide with the
+  // first org's generated names — a short org-derived suffix keeps every
+  // generated value unique across orgs while staying stable for reruns.
+  const orgSuffix = orgId.toString().slice(-5);
   console.log(`[seed-org] target: ${adminEmail}'s organization (${orgId})`);
 
   // Only ever touch this org's own previously-seeded records — never a
@@ -143,7 +148,7 @@ async function main() {
     const lastLoginAt = seed.loginDaysAgo == null ? undefined : new Date(now.getTime() - seed.loginDaysAgo * 24 * 60 * 60 * 1000);
     return {
       name: seed.name,
-      email: `${seed.name.toLowerCase().replace(/\s+/g, ".")}@${EMAIL_DOMAIN}`,
+      email: `${seed.name.toLowerCase().replace(/\s+/g, ".")}.${orgSuffix}@${EMAIL_DOMAIN}`,
       password: pw,
       role: "employee",
       organization: orgId,
@@ -167,7 +172,7 @@ async function main() {
       organization: orgId,
       make: v.make,
       model: v.model,
-      registrationNumber: `${REG_PREFIX}${String(i + 1).padStart(3, "0")}`,
+      registrationNumber: `${REG_PREFIX}${orgSuffix}-${String(i + 1).padStart(3, "0")}`,
       seatingCapacity: v.seats,
       isActive: d.isActive !== false,
     };
