@@ -1,52 +1,60 @@
 import { useCallback, useEffect, useState } from "react";
+import { getSavedPlaces, createSavedPlace, updateSavedPlace, deleteSavedPlace } from "../services/savedPlace";
 
-const STORAGE_KEY = "wayflow_saved_places";
-
-const defaultPlaces = [
-  { id: "home", name: "Home", address: "Koramangala, Bengaluru", lat: 12.9352, lng: 77.6146, kind: "home" },
-  { id: "office", name: "Office", address: "MG Road, Bengaluru", lat: 12.9758, lng: 77.6045, kind: "work" },
-];
-
-// Shared saved-places store — backs both the Saved Places settings page
-// and the "quick locations" shortcuts on Find a Ride. LocalStorage only
-// for now (no backend model yet); same {id,name,address,lat,lng,kind}
-// shape would map directly onto a SavedPlace collection later.
+// Backed by a per-user SavedPlace collection on the backend, scoped to the
+// logged-in user via the auth token — previously this lived in one flat
+// localStorage key shared by whoever happened to be logged into the browser,
+// so every account saw the same places.
 export function useSavedPlaces() {
   const [places, setPlaces] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    function loadPlaces() {
-      try {
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-        setPlaces(saved.length ? saved : defaultPlaces);
-      } catch {
-        setPlaces(defaultPlaces);
-      } finally {
+    let active = true;
+
+    function fail(err) {
+      setError(err.message || "Could not load saved places");
+      setLoading(false);
+    }
+
+    getSavedPlaces()
+      .then((data) => {
+        if (!active) return;
+        setPlaces(data);
         setLoading(false);
-      }
-    }
-    loadPlaces();
+      })
+      .catch((err) => {
+        if (active) fail(err);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
-  useEffect(() => {
-    if (!loading) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(places));
-    }
-  }, [places, loading]);
-
-  const upsertPlace = useCallback((place, editingId) => {
-    setPlaces((current) => {
+  const upsertPlace = useCallback(async (place, editingId) => {
+    try {
       if (editingId) {
-        return current.map((p) => (p.id === editingId ? { ...place, id: editingId } : p));
+        const updated = await updateSavedPlace(editingId, place);
+        setPlaces((current) => current.map((p) => (p.id === editingId ? updated : p)));
+      } else {
+        const created = await createSavedPlace(place);
+        setPlaces((current) => [created, ...current]);
       }
-      return [{ ...place, id: `place-${Date.now()}` }, ...current];
-    });
+    } catch (err) {
+      setError(err.message || "Could not save this place");
+    }
   }, []);
 
-  const removePlace = useCallback((id) => {
-    setPlaces((current) => current.filter((p) => p.id !== id));
+  const removePlace = useCallback(async (id) => {
+    try {
+      await deleteSavedPlace(id);
+      setPlaces((current) => current.filter((p) => p.id !== id));
+    } catch (err) {
+      setError(err.message || "Could not remove this place");
+    }
   }, []);
 
-  return { places, loading, upsertPlace, removePlace };
+  return { places, loading, error, upsertPlace, removePlace };
 }
